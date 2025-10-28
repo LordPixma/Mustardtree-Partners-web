@@ -40,6 +40,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           # Create project if it doesn't exist (will fail silently if it exists)
-          wrangler pages project create mustardtree-partners-web --compatibility-date=2024-10-28 || true
+          wrangler pages project create mustardtree-web --compatibility-date=2024-10-28 || true
           # Deploy the built files
-          wrangler pages deploy dist --project-name=mustardtree-partners-web
+          wrangler pages deploy dist --project-name=mustardtree-web
