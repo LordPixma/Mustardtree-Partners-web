@@ -1,0 +1,5 @@
+# Handle client-side routing for single page application
+/* /index.html 200
+
+# Redirect old URLs if needed (add specific redirects here)
+# /old-page /new-page 301
