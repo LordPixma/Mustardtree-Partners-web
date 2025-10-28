@@ -44,7 +44,7 @@ You can also deploy manually using Wrangler:
 npm install -g wrangler
 wrangler login
 npm run build
-wrangler pages deploy dist --project-name=mustardtree-partners-web
+wrangler pages deploy dist --project-name=mustardtree-web
 ```
 
 ## Project Structure
