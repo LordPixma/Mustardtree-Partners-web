@@ -18,7 +18,7 @@ export function Services() {
   }, {
     icon: Search,
     title: 'Strategic Intelligence',
-    description: 'Ethical OSINT/HUMINT research, due diligence, and market insight to help you understand risks, opportunities, and competitive landscapes.'
+    description: 'Ethical open-source and human-sourced intelligence providing clear due diligence, market insights, and risk analysis to help organisations identify opportunities and navigate competitive landscapes confidently'
   }, {
     icon: Lightbulb,
     title: 'Advisory & Support',
