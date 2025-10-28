@@ -31,14 +31,15 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: mustardtree-partners-web
-          directory: dist
-          # Optional: git token for better commit information
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          # Deploy preview for pull requests, production for main branch
-          wranglerVersion: '3'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Create project if it doesn't exist (will fail silently if it exists)
+          wrangler pages project create mustardtree-partners-web --compatibility-date=2024-10-28 || true
+          # Deploy the built files
+          wrangler pages deploy dist --project-name=mustardtree-partners-web
