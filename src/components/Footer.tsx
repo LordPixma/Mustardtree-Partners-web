@@ -1,4 +1,3 @@
-import React from 'react';
 import { Linkedin, Mail } from 'lucide-react';
 export function Footer() {
   return <footer className="bg-gray-900 text-white py-12">
@@ -31,7 +30,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-yellow-500 transition-colors">
+                <a href="/privacy" className="text-gray-400 hover:text-yellow-500 transition-colors">
                   Privacy Policy
                 </a>
               </li>
