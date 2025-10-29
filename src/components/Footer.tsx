@@ -61,6 +61,10 @@ export function Footer() {
         </div>
         <div className="border-t border-gray-800 pt-8 text-center text-gray-400 text-sm">
           <p>© 2025 Mustardtree Partners Ltd. All rights reserved.</p>
+          <p className="mt-2">
+            Mustardtree Partners Ltd is a registered company in England and Wales (Company No: 16815318) 
+            and is part of the MustardTree Group.
+          </p>
         </div>
       </div>
     </footer>;
