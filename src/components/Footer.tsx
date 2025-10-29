@@ -35,7 +35,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-yellow-500 transition-colors">
+                <a href="/terms" className="text-gray-400 hover:text-yellow-500 transition-colors">
                   Terms & Conditions
                 </a>
               </li>
