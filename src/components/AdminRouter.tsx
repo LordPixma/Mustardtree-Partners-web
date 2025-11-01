@@ -1,7 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { DevelopmentLogin } from './CloudflareLogin';
-import { DebugCloudflareLogin } from './DebugCloudflareLogin';
+import { ProductionLogin } from './ProductionLogin';
 import { AdminDashboard } from './AdminDashboard';
 import { useCloudflareAuth } from '../services/cloudflareAuthService';
 import { Loader2 } from 'lucide-react';
@@ -34,22 +33,12 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
  * Admin router with Cloudflare Access authentication
  */
 export const AdminRouter: React.FC = () => {
-  const [isDevMode] = React.useState(() => {
-    return process.env.NODE_ENV === 'development' && process.env.DEV_MOCK_AUTH === 'true';
-  });
-
   return (
     <Routes>
-      {/* Login route */}
+      {/* Login route - always use production login */}
       <Route 
         path="/login" 
-        element={
-          isDevMode ? (
-            <DevelopmentLogin onAuthSuccess={() => window.location.href = '/admin'} />
-          ) : (
-            <DebugCloudflareLogin onAuthSuccess={() => window.location.href = '/admin'} />
-          )
-        } 
+        element={<ProductionLogin onAuthSuccess={() => window.location.href = '/admin'} />}
       />
       
       {/* Protected admin routes */}
