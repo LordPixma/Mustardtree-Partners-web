@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { CloudflareLogin, DevelopmentLogin } from './CloudflareLogin';
+import { DevelopmentLogin } from './CloudflareLogin';
+import { DebugCloudflareLogin } from './DebugCloudflareLogin';
 import { AdminDashboard } from './AdminDashboard';
 import { useCloudflareAuth } from '../services/cloudflareAuthService';
 import { Loader2 } from 'lucide-react';
@@ -46,7 +47,7 @@ export const AdminRouter: React.FC = () => {
           isDevMode ? (
             <DevelopmentLogin onAuthSuccess={() => window.location.href = '/admin'} />
           ) : (
-            <CloudflareLogin onAuthSuccess={() => window.location.href = '/admin'} />
+            <DebugCloudflareLogin onAuthSuccess={() => window.location.href = '/admin'} />
           )
         } 
       />
