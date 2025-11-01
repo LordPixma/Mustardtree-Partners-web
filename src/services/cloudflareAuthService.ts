@@ -43,8 +43,10 @@ export class CloudflareAccessService {
     // In browser environment, return hardcoded config for development
     if (typeof process === 'undefined' || typeof window !== 'undefined') {
       // For development, return the configuration from your .env file
+      // Using SELF-HOSTED Cloudflare Access on main domain
+      // The Application URL from your screenshot: mustardtreegroup.com/admin/*
       return {
-        domain: 'mustardtreegroup.cloudflareaccess.com',
+        domain: 'mustardtreegroup.com', // Your main domain with SELF-HOSTED Access
         applicationAUD: '2ab81f6bcbd116922eb63640376f7c539fc5d773b453d019edd8360fb3413a30',
         certsUrl: undefined
       };

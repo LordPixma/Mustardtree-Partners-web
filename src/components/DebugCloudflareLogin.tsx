@@ -188,26 +188,40 @@ export const DebugCloudflareLogin: React.FC<DebugCloudflareLoginProps> = ({ onAu
             )}
           </div>
 
-          <p className="text-gray-600 mb-8">
+          <p className="text-gray-600 mb-4">
             This blog admin area is protected by Cloudflare Access. 
             Choose an option below to authenticate.
           </p>
 
-          <div className="space-y-3">
-            <button
-              onClick={handleTestLogin}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-            >
-              <LogIn className="h-5 w-5" />
-              <span>Test Cloudflare Access Login</span>
-            </button>
+          {/* Development Mode Warning */}
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+              <div className="text-sm text-yellow-800">
+                <p className="font-semibold mb-1">Development Mode Notice:</p>
+                <p>You're running on localhost. The "Test Cloudflare Access Login" will fail because Cloudflare Access requires proper domain configuration. Use "Mock Login" for local development.</p>
+              </div>
+            </div>
+          </div>
 
+          <div className="space-y-3">
+            {/* Recommended for development */}
             <button
               onClick={handleMockLogin}
-              className="w-full bg-orange-600 text-white py-3 px-4 rounded-md hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
+              className="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center space-x-2 border-2 border-green-700"
             >
               <User className="h-5 w-5" />
-              <span>Use Mock Login (Development)</span>
+              <span>✅ Use Mock Login (Development)</span>
+            </button>
+
+            {/* Will fail on localhost */}
+            <button
+              onClick={handleTestLogin}
+              className="w-full bg-gray-500 text-white py-3 px-4 rounded-md hover:bg-gray-600 transition-colors flex items-center justify-center space-x-2 opacity-75"
+              title="This will fail on localhost - only works when deployed to production domain"
+            >
+              <LogIn className="h-5 w-5" />
+              <span>⚠️ Test Cloudflare Access Login (Production Only)</span>
             </button>
           </div>
 
