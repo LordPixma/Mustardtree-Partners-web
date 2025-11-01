@@ -17,7 +17,6 @@ import {
 import { blogService } from '../services/blogService';
 import { CloudflareAccessService } from '../services/cloudflareAuthService';
 import { PostEditor } from './PostEditor';
-import { PasswordChange } from './PasswordChange';
 import type { BlogPost as BlogPostType, Author } from '../types/blog';
 
 export function AdminDashboard() {

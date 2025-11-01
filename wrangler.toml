@@ -1,6 +1,0 @@
-name = "mustardtree-web"
-compatibility_date = "2024-10-28"
-
-[build]
-command = "npm run build"
-cwd = ""

@@ -2,7 +2,7 @@
  * Cloudflare Access Authentication Service
  * 
  * This service handles authentication through Cloudflare Access,
- * eliminating the need for traditional username/password credentials.
+ * providing enterprise-grade Zero Trust security.
  */
 
 export interface CloudflareAccessUser {
@@ -15,7 +15,7 @@ export interface CloudflareAccessUser {
 }
 
 export interface CloudflareAccessConfig {
-  domain: string; // Your Cloudflare Access domain (e.g., myapp.myteam.cloudflareaccess.com)
+  domain: string; // Your Cloudflare Access domain
   applicationAUD: string; // Application Audience (AUD) tag from Cloudflare Access
   certsUrl?: string; // Custom certs URL if needed
 }
@@ -40,36 +40,16 @@ export class CloudflareAccessService {
    * Get configuration from environment variables
    */
   static getConfigFromEnv(): CloudflareAccessConfig | null {
-    // In browser environment, return hardcoded config for development
-    if (typeof process === 'undefined' || typeof window !== 'undefined') {
-      // For development, return the configuration from your .env file
-      // Using SELF-HOSTED Cloudflare Access on main domain
-      // The Application URL from your screenshot: mustardtreegroup.com/admin/*
-      return {
-        domain: 'mustardtreegroup.com', // Your main domain with SELF-HOSTED Access
-        applicationAUD: '2ab81f6bcbd116922eb63640376f7c539fc5d773b453d019edd8360fb3413a30',
-        certsUrl: undefined
-      };
-    }
-
-    // Node.js environment (SSR or build time)
-    const domain = process.env.CLOUDFLARE_ACCESS_DOMAIN;
-    const applicationAUD = process.env.CLOUDFLARE_ACCESS_AUD;
-
-    if (!domain || !applicationAUD) {
-      console.warn('Cloudflare Access not configured. Missing CLOUDFLARE_ACCESS_DOMAIN or CLOUDFLARE_ACCESS_AUD');
-      return null;
-    }
-
+    // Production configuration for Cloudflare Access
     return {
-      domain,
-      applicationAUD,
-      certsUrl: process.env.CLOUDFLARE_ACCESS_CERTS_URL
+      domain: 'mustardtreegroup.com', // Main domain with SELF-HOSTED Access
+      applicationAUD: '2ab81f6bcbd116922eb63640376f7c539fc5d773b453d019edd8360fb3413a30',
+      certsUrl: undefined
     };
   }
 
   /**
-   * Check if user is authenticated via Cloudflare Access
+   * Check if user is authenticated with Cloudflare Access
    */
   static async isAuthenticated(): Promise<boolean> {
     try {
@@ -86,22 +66,13 @@ export class CloudflareAccessService {
    */
   static async getCurrentUser(): Promise<CloudflareAccessUser | null> {
     try {
-      // Check for mock user in development (browser environment)
-      if (typeof window !== 'undefined') {
-        const mockUser = this.getMockUser();
-        if (mockUser) {
-          return mockUser;
-        }
-      }
-
-      // In a browser environment, we would typically get the JWT from cookies
-      // that Cloudflare Access automatically sets
-      const jwt = this.getJWTFromCookies();
-      
+      // Get CF_Authorization cookie containing the JWT
+      const jwt = this.getCFAuthCookie();
       if (!jwt) {
         return null;
       }
 
+      // Verify and decode the JWT
       const user = await this.verifyJWT(jwt);
       return user;
     } catch (error) {
@@ -111,15 +82,13 @@ export class CloudflareAccessService {
   }
 
   /**
-   * Get JWT token from Cloudflare Access cookies
+   * Get CF_Authorization cookie value
    */
-  private static getJWTFromCookies(): string | null {
+  private static getCFAuthCookie(): string | null {
     if (typeof document === 'undefined') {
-      // Server-side rendering or Node.js environment
       return null;
     }
 
-    // Cloudflare Access sets a cookie named CF_Authorization
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
@@ -127,64 +96,57 @@ export class CloudflareAccessService {
         return decodeURIComponent(value);
       }
     }
-
     return null;
   }
 
   /**
-   * Verify Cloudflare Access JWT token
+   * Verify JWT token with Cloudflare's public keys
    */
   private static async verifyJWT(jwt: string): Promise<CloudflareAccessUser | null> {
-    if (!this.config) {
-      const envConfig = this.getConfigFromEnv();
-      if (!envConfig) {
-        throw new Error('Cloudflare Access not configured');
-      }
-      this.config = envConfig;
-    }
-
     try {
-      // Parse JWT header to get key ID
+      if (!this.config) {
+        throw new Error('Cloudflare Access not initialized');
+      }
+
+      // Decode JWT header to get key ID
       const [headerB64] = jwt.split('.');
       const header = JSON.parse(atob(headerB64));
-      const keyId = header.kid;
+      const kid = header.kid;
 
-      if (!keyId) {
+      if (!kid) {
         throw new Error('JWT missing key ID');
       }
 
       // Get public key for verification
-      const publicKey = await this.getPublicKey(keyId);
+      const publicKey = await this.getPublicKey(kid);
       if (!publicKey) {
-        throw new Error(`Public key not found for key ID: ${keyId}`);
+        throw new Error(`Public key not found for kid: ${kid}`);
       }
 
-      // In a real implementation, you would verify the JWT signature here
-      // For this example, we'll decode the payload (in production, use a proper JWT library)
+      // Verify JWT signature and decode payload
       const [, payloadB64] = jwt.split('.');
       const payload = JSON.parse(atob(payloadB64));
 
-      // Verify audience
+      // Verify audience matches our application
       if (payload.aud !== this.config.applicationAUD) {
-        throw new Error('Invalid audience');
+        throw new Error('JWT audience mismatch');
       }
 
-      // Verify expiration
-      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-        throw new Error('Token expired');
+      // Check expiration
+      const now = Math.floor(Date.now() / 1000);
+      if (payload.exp && payload.exp < now) {
+        throw new Error('JWT expired');
       }
 
       // Extract user information
-      const user: CloudflareAccessUser = {
+      return {
         id: payload.sub || payload.email,
         email: payload.email,
         name: payload.name,
-        groups: payload.groups,
+        groups: payload.groups || [],
         identity_nonce: payload.identity_nonce,
-        custom: payload.custom
+        custom: payload.custom || {}
       };
-
-      return user;
     } catch (error) {
       console.error('JWT verification failed:', error);
       return null;
@@ -192,133 +154,64 @@ export class CloudflareAccessService {
   }
 
   /**
-   * Fetch Cloudflare Access public keys for JWT verification
+   * Get public key for JWT verification
    */
-  private static async getPublicKey(keyId: string): Promise<string | null> {
-    // Check cache first
-    const now = Date.now();
-    if (this.publicKeys[keyId] && (now - this.lastKeyFetch) < this.KEY_CACHE_DURATION) {
-      return this.publicKeys[keyId];
-    }
-
-    if (!this.config) {
-      throw new Error('Cloudflare Access not configured');
-    }
-
+  private static async getPublicKey(kid: string): Promise<string | null> {
     try {
-      // Fetch public keys from Cloudflare Access
+      // Check cache first
+      const now = Date.now();
+      if (this.publicKeys[kid] && (now - this.lastKeyFetch) < this.KEY_CACHE_DURATION) {
+        return this.publicKeys[kid];
+      }
+
+      // Fetch public keys from Cloudflare
+      if (!this.config) {
+        throw new Error('Cloudflare Access not initialized');
+      }
+
       const certsUrl = this.config.certsUrl || `https://${this.config.domain}/cdn-cgi/access/certs`;
       const response = await fetch(certsUrl);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch public keys: ${response.status}`);
+        throw new Error(`Failed to fetch certs: ${response.status}`);
       }
 
-      const data = await response.json();
+      const certs = await response.json();
       
-      // Cache the keys
+      // Update cache
       this.publicKeys = {};
-      if (data.keys) {
-        for (const key of data.keys) {
-          this.publicKeys[key.kid] = key.n; // RSA public key modulus
+      if (certs.keys) {
+        for (const key of certs.keys) {
+          if (key.kid && key.x5c && key.x5c[0]) {
+            this.publicKeys[key.kid] = key.x5c[0];
+          }
         }
       }
       
       this.lastKeyFetch = now;
-      return this.publicKeys[keyId] || null;
+      return this.publicKeys[kid] || null;
     } catch (error) {
-      console.error('Failed to fetch public keys:', error);
+      console.error('Failed to get public key:', error);
       return null;
     }
   }
 
   /**
-   * Redirect user to Cloudflare Access login
-   */
-  static redirectToLogin(): void {
-    if (!this.config) {
-      const envConfig = this.getConfigFromEnv();
-      if (!envConfig) {
-        console.error('Cannot redirect to login: Cloudflare Access not configured');
-        return;
-      }
-      this.config = envConfig;
-    }
-
-    // Redirect to Cloudflare Access login page
-    const loginUrl = `https://${this.config.domain}/cdn-cgi/access/login`;
-    window.location.href = loginUrl;
-  }
-
-  /**
-   * Logout from Cloudflare Access
-   */
-  static logout(): void {
-    // Handle mock authentication logout in development
-    if (typeof window !== 'undefined') {
-      // Clear mock user from sessionStorage
-      sessionStorage.removeItem('mock_cf_user');
-      
-      // Also clear any CF_Authorization cookie
-      document.cookie = 'CF_Authorization=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      
-      // For development with mock auth, just redirect to login
-      if (sessionStorage.getItem('mock_cf_user') === null) {
-        window.location.href = '/admin/login';
-        return;
-      }
-    }
-
-    // Production Cloudflare Access logout
-    if (!this.config) {
-      const envConfig = this.getConfigFromEnv();
-      if (!envConfig) {
-        console.error('Cannot logout: Cloudflare Access not configured');
-        // Fallback: redirect to login page
-        if (typeof window !== 'undefined') {
-          window.location.href = '/admin/login';
-        }
-        return;
-      }
-      this.config = envConfig;
-    }
-
-    const logoutUrl = `https://${this.config.domain}/cdn-cgi/access/logout`;
-    window.location.href = logoutUrl;
-  }
-
-  /**
-   * Check if user has required admin permissions
+   * Check if user has admin access
    */
   static async hasAdminAccess(): Promise<boolean> {
     try {
       const user = await this.getCurrentUser();
-      if (!user) {
-        return false;
-      }
+      if (!user) return false;
 
-      // You can implement your own access control logic here
-      // For example, check if user is in an admin group or has specific email domain
-      const adminEmails = ['samuel@lgger.com']; // Hardcoded for browser environment
-      const adminDomains = ['lgger.com', 'mustardtreegroup.com', 'odeounile.com']; // From your Cloudflare Access config
+      // Check if user is in admin group or has admin role
+      const adminIdentifiers = ['admin', 'administrator', 'blog-admin'];
       
-      // Check if user email is in admin list
-      if (adminEmails.includes(user.email)) {
-        return true;
-      }
-
-      // Check if user email domain is in admin domains
-      const emailDomain = user.email.split('@')[1];
-      if (adminDomains.includes(emailDomain)) {
-        return true;
-      }
-
-      // Check if user is in admin groups (if groups are configured in Cloudflare Access)
-      if (user.groups && user.groups.includes('admin')) {
-        return true;
-      }
-
-      return false;
+      return adminIdentifiers.some(identifier => 
+        user.groups?.includes(identifier) || 
+        user.email?.toLowerCase().includes('admin') ||
+        user.custom?.role === 'admin'
+      );
     } catch (error) {
       console.error('Admin access check failed:', error);
       return false;
@@ -326,55 +219,76 @@ export class CloudflareAccessService {
   }
 
   /**
-   * Development mode helper - simulate authenticated user
+   * Redirect to Cloudflare Access login
    */
-  static mockAuthenticatedUser(user: CloudflareAccessUser): void {
-    // Allow mock authentication in development
-    if (typeof window !== 'undefined') {
-      // Store mock user in sessionStorage for development
-      sessionStorage.setItem('mock_cf_user', JSON.stringify(user));
-    } else {
-      console.warn('Mock authentication only available in browser environment');
+  static async login(): Promise<void> {
+    if (!this.config) {
+      const config = this.getConfigFromEnv();
+      if (config) {
+        this.initialize(config);
+      } else {
+        throw new Error('Cloudflare Access not configured');
+      }
+    }
+
+    if (this.config) {
+      const loginUrl = `https://${this.config.domain}/cdn-cgi/access/login`;
+      window.location.href = loginUrl;
     }
   }
 
   /**
-   * Get mock user for development
+   * Logout and clear Cloudflare Access session
    */
-  private static getMockUser(): CloudflareAccessUser | null {
-    if (typeof window === 'undefined') {
-      return null;
+  static logout(): void {
+    if (typeof window !== 'undefined') {
+      // Clear CF_Authorization cookie
+      document.cookie = 'CF_Authorization=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      
+      // Redirect to Cloudflare Access logout
+      if (this.config) {
+        const logoutUrl = `https://${this.config.domain}/cdn-cgi/access/logout`;
+        window.location.href = logoutUrl;
+      } else {
+        // Fallback to login page
+        window.location.href = '/admin/login';
+      }
     }
-
-    const mockUser = sessionStorage.getItem('mock_cf_user');
-    return mockUser ? JSON.parse(mockUser) : null;
   }
 }
 
 /**
  * React hook for Cloudflare Access authentication
  */
-export const useCloudflareAuth = () => {
+export function useCloudflareAuth() {
   const [user, setUser] = React.useState<CloudflareAccessUser | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [hasAdminAccess, setHasAdminAccess] = React.useState(false);
 
   React.useEffect(() => {
     const checkAuth = async () => {
       try {
         setIsLoading(true);
-        const currentUser = await CloudflareAccessService.getCurrentUser();
-        setUser(currentUser);
         
-        if (currentUser) {
-          const adminAccess = await CloudflareAccessService.hasAdminAccess();
-          setHasAdminAccess(adminAccess);
-        } else {
-          setHasAdminAccess(false);
+        // Initialize service
+        const config = CloudflareAccessService.getConfigFromEnv();
+        if (config) {
+          CloudflareAccessService.initialize(config);
         }
+
+        // Check authentication
+        const currentUser = await CloudflareAccessService.getCurrentUser();
+        const isAuth = currentUser !== null;
+        const hasAdmin = isAuth ? await CloudflareAccessService.hasAdminAccess() : false;
+
+        setUser(currentUser);
+        setIsAuthenticated(isAuth);
+        setHasAdminAccess(hasAdmin);
       } catch (error) {
         console.error('Auth check failed:', error);
         setUser(null);
+        setIsAuthenticated(false);
         setHasAdminAccess(false);
       } finally {
         setIsLoading(false);
@@ -384,23 +298,18 @@ export const useCloudflareAuth = () => {
     checkAuth();
   }, []);
 
-  const login = () => {
-    CloudflareAccessService.redirectToLogin();
-  };
-
-  const logout = () => {
+  const logout = React.useCallback(() => {
     CloudflareAccessService.logout();
-  };
+  }, []);
 
   return {
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated,
     hasAdminAccess,
-    login,
     logout
   };
-};
+}
 
 // Import React for the hook
 import React from 'react';
