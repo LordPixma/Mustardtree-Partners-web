@@ -11,8 +11,7 @@ import {
   Calendar,
   Clock,
   Search,
-  Filter,
-  Settings
+  Filter
 } from 'lucide-react';
 import { blogService } from '../services/blogService';
 import { CloudflareAccessService } from '../services/cloudflareAuthService';
@@ -431,15 +430,7 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      {/* Password Change Modal */}
-      {showPasswordChange && (
-        <PasswordChange
-          onClose={() => setShowPasswordChange(false)}
-          onSuccess={() => {
-            alert('Password changed successfully!');
-          }}
-        />
-      )}
+
     </div>
   );
 }
