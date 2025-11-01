@@ -28,7 +28,7 @@ export function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
   const [showEditor, setShowEditor] = useState(false);
   const [editingPostId, setEditingPostId] = useState<string | undefined>();
-  const [showPasswordChange, setShowPasswordChange] = useState(false);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -147,13 +147,7 @@ export function AdminDashboard() {
               >
                 <Eye className="h-5 w-5" />
               </a>
-              <button
-                onClick={() => setShowPasswordChange(true)}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-                title="Change Password"
-              >
-                <Settings className="h-5 w-5" />
-              </button>
+
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
