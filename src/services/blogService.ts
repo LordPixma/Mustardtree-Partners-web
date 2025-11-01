@@ -1,5 +1,6 @@
 import type { BlogPost, Author, AdminUser } from '../types/blog';
 import { sanitizeText, sanitizeHtmlContent, loginRateLimiter } from '../utils/security';
+import { AuthService, EnvConfig } from './authService';
 
 // In a real application, this would be connected to a backend API
 // For now, we'll use localStorage with a simple state management system
@@ -10,16 +11,6 @@ const STORAGE_KEYS = {
   ADMIN_USERS: 'mustardtree_admin_users',
   AUTH_TOKEN: 'mustardtree_auth_token',
   CURRENT_USER: 'mustardtree_current_user'
-};
-
-// Default admin user (in production, this would be seeded differently)
-const DEFAULT_ADMIN: AdminUser = {
-  id: '1',
-  username: 'webadmin',
-  email: 'admin@mustardtreegroup.com',
-  passwordHash: 'admin123', // In production, this would be properly hashed
-  role: 'admin',
-  createdAt: new Date().toISOString()
 };
 
 // Sample authors
@@ -100,10 +91,12 @@ Effective corporate governance is not just about compliance—it's about creatin
 
 class BlogService {
   // Initialize storage with default data if empty
-  private initializeStorage(): void {
+  private async initializeStorage(): Promise<void> {
+    // Initialize admin users with secure credentials
     if (!localStorage.getItem(STORAGE_KEYS.ADMIN_USERS)) {
-      localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify([DEFAULT_ADMIN]));
+      await this.initializeSecureAdmin();
     }
+    
     if (!localStorage.getItem(STORAGE_KEYS.AUTHORS)) {
       localStorage.setItem(STORAGE_KEYS.AUTHORS, JSON.stringify(DEFAULT_AUTHORS));
     }
@@ -112,9 +105,87 @@ class BlogService {
     }
   }
 
+  private async initializeSecureAdmin(): Promise<void> {
+    try {
+      if (EnvConfig.isProduction()) {
+        // Production: Use environment variables
+        const prodCredentials = AuthService.getProductionCredentials();
+        
+        if (!prodCredentials || !prodCredentials.passwordHash) {
+          console.error('❌ PRODUCTION ERROR: Missing required environment variables for admin user');
+          console.error('Required: ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD_HASH');
+          console.error('Please set these environment variables before starting the application');
+          throw new Error('Missing production admin credentials');
+        }
+
+        const adminUser: AdminUser = {
+          id: crypto.randomUUID(),
+          username: prodCredentials.username,
+          email: prodCredentials.email,
+          passwordHash: prodCredentials.passwordHash,
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        };
+
+        localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify([adminUser]));
+        console.log('✅ Production admin user initialized from environment variables');
+        
+      } else {
+        // Development: Generate secure credentials
+        const setup = await AuthService.setupInitialCredentials();
+        
+        if (!setup.success || !setup.credentials) {
+          throw new Error(setup.error || 'Failed to setup credentials');
+        }
+
+        const hashedPassword = await AuthService.hashPassword(setup.credentials.password);
+        const adminUser: AdminUser = {
+          id: crypto.randomUUID(),
+          username: setup.credentials.username,
+          email: setup.credentials.email,
+          passwordHash: hashedPassword,
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        };
+
+        localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify([adminUser]));
+        
+        // Show credentials in development only
+        console.log('🔐 DEVELOPMENT ADMIN CREDENTIALS GENERATED:');
+        console.log('📧 Email:', setup.credentials.email);
+        console.log('👤 Username:', setup.credentials.username);
+        console.log('🔑 Password:', setup.credentials.password);
+        console.log('⚠️  Save these credentials! They will not be shown again.');
+        console.log('💡 You can change the password after logging in.');
+      }
+    } catch (error) {
+      console.error('Failed to initialize secure admin:', error);
+      
+      // Fallback for development only
+      if (EnvConfig.isDevelopment()) {
+        console.warn('⚠️  Falling back to temporary insecure credentials for development');
+        const fallbackAdmin: AdminUser = {
+          id: 'fallback-admin',
+          username: 'admin',
+          email: 'admin@mustardtreepartners.com',
+          passwordHash: await AuthService.hashPassword('TempPassword123!'),
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify([fallbackAdmin]));
+        console.log('🔓 TEMPORARY FALLBACK CREDENTIALS:');
+        console.log('👤 Username: admin');
+        console.log('🔑 Password: TempPassword123!');
+      } else {
+        throw error; // Don't allow fallback in production
+      }
+    }
+  }
+
   // Authentication methods
   async login(username: string, password: string): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
-    this.initializeStorage();
+    await this.initializeStorage();
     
     // Check rate limiting
     const clientId = 'login_attempts'; // In a real app, this would be IP-based
@@ -131,7 +202,20 @@ class BlogService {
     const cleanPassword = sanitizeText(password);
     
     const users: AdminUser[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ADMIN_USERS) || '[]');
-    const user = users.find(u => u.username === cleanUsername && u.passwordHash === cleanPassword);
+    
+    // Find user by username first
+    const user = users.find(u => u.username === cleanUsername);
+    
+    if (!user) {
+      return { success: false, error: 'Invalid credentials' };
+    }
+    
+    // Verify password using secure comparison
+    const isPasswordValid = await AuthService.verifyPassword(cleanPassword, user.passwordHash);
+    
+    if (!isPasswordValid) {
+      return { success: false, error: 'Invalid credentials' };
+    }
     
     if (user) {
       const authToken = btoa(`${user.id}:${Date.now()}`);
@@ -171,13 +255,21 @@ class BlogService {
       return { success: false, error: 'User not found' };
     }
 
-    // Verify current password
-    if (users[userIndex].passwordHash !== cleanCurrentPassword) {
+    // Verify current password using secure comparison
+    const isCurrentPasswordValid = await AuthService.verifyPassword(cleanCurrentPassword, users[userIndex].passwordHash);
+    if (!isCurrentPasswordValid) {
       return { success: false, error: 'Current password is incorrect' };
     }
 
-    // Update password
-    users[userIndex].passwordHash = cleanNewPassword;
+    // Validate new password strength
+    const passwordValidation = AuthService.validatePasswordStrength(cleanNewPassword);
+    if (!passwordValidation.isValid) {
+      return { success: false, error: passwordValidation.errors.join('. ') };
+    }
+
+    // Hash new password securely
+    const hashedNewPassword = await AuthService.hashPassword(cleanNewPassword);
+    users[userIndex].passwordHash = hashedNewPassword;
 
     // Save updated users
     localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify(users));
@@ -196,7 +288,7 @@ class BlogService {
 
   // Blog post methods
   async getPosts(): Promise<BlogPost[]> {
-    this.initializeStorage();
+    await this.initializeStorage();
     const posts: BlogPost[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.POSTS) || '[]');
     const authors: Author[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.AUTHORS) || '[]');
     
@@ -276,7 +368,7 @@ class BlogService {
 
   // Author methods
   async getAuthors(): Promise<Author[]> {
-    this.initializeStorage();
+    await this.initializeStorage();
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.AUTHORS) || '[]');
   }
 
