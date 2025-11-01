@@ -8,7 +8,6 @@
  */
 
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
 
 class CredentialGenerator {
   static generateSecurePassword(length = 16) {
@@ -54,7 +53,7 @@ class CredentialGenerator {
     if (!/\d/.test(password)) {
       errors.push('Password must contain at least one number');
     }
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
       errors.push('Password must contain at least one special character');
     }
     

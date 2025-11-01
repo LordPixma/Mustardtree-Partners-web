@@ -18,7 +18,7 @@ async function testAuthentication() {
     
     // Test 2: Password Validation
     console.log('\n2️⃣ Testing password validation...');
-    const validation = AuthService.validatePassword(password);
+    const validation = AuthService.validatePasswordStrength(password);
     console.log(`✅ Password validation: ${validation.isValid ? 'PASSED' : 'FAILED'}`);
     if (!validation.isValid) {
       validation.errors.forEach(error => console.log(`   ❌ ${error}`));
@@ -42,8 +42,8 @@ async function testAuthentication() {
     // Test 6: Admin Creation
     console.log('\n6️⃣ Testing admin creation...');
     const adminData = await AuthService.createInitialAdmin();
-    console.log(`✅ Admin created: ${adminData.username} (${adminData.email})`);
-    console.log(`   Password hash: ${adminData.passwordHash.substring(0, 20)}...`);
+    console.log(`✅ Admin created: ${adminData.user.username} (${adminData.user.email})`);
+    console.log(`   Password hash: ${adminData.user.passwordHash.substring(0, 20)}...`);
 
     console.log('\n🎉 All authentication tests passed!');
     console.log('\n📋 Test Summary:');

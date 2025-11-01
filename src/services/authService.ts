@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import type { AdminUser } from '../types/blog';
 
 /**
@@ -25,7 +26,7 @@ export class AuthService {
   /**
    * Generate a strong random password
    */
-  static generateSecurePassword(length: number = 16): string {
+  static generateSecurePassword(length = 16): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
     let password = '';
     
@@ -84,7 +85,7 @@ export class AuthService {
       score++;
     }
 
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
       errors.push('Password must contain at least one special character');
     } else {
       score++;
@@ -223,7 +224,7 @@ export class EnvConfig {
     return value;
   }
 
-  static getOptionalEnvVar(name: string, defaultValue: string = ''): string {
+  static getOptionalEnvVar(name: string, defaultValue = ''): string {
     return process.env[name] || defaultValue;
   }
 }
