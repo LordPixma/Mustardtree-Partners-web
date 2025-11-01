@@ -9,7 +9,9 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "preview": "npx vite preview",
     "generate-credentials": "node scripts/generate-credentials.js",
-    "generate-credentials:help": "node scripts/generate-credentials.js --help"
+    "generate-credentials:help": "node scripts/generate-credentials.js --help",
+    "migrate-auth": "node scripts/migrate-auth.js",
+    "migrate-auth:help": "node scripts/migrate-auth.js --help"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
