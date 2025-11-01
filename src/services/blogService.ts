@@ -153,6 +153,38 @@ class BlogService {
     localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
   }
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Sanitize inputs
+    const cleanCurrentPassword = sanitizeText(currentPassword);
+    const cleanNewPassword = sanitizeText(newPassword);
+
+    // Get all users
+    const users: AdminUser[] = JSON.parse(localStorage.getItem(STORAGE_KEYS.ADMIN_USERS) || '[]');
+    const userIndex = users.findIndex(u => u.id === currentUser.id);
+
+    if (userIndex === -1) {
+      return { success: false, error: 'User not found' };
+    }
+
+    // Verify current password
+    if (users[userIndex].passwordHash !== cleanCurrentPassword) {
+      return { success: false, error: 'Current password is incorrect' };
+    }
+
+    // Update password
+    users[userIndex].passwordHash = cleanNewPassword;
+
+    // Save updated users
+    localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify(users));
+
+    return { success: true };
+  }
+
   isAuthenticated(): boolean {
     return !!localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
   }

@@ -11,10 +11,12 @@ import {
   Calendar,
   Clock,
   Search,
-  Filter
+  Filter,
+  Settings
 } from 'lucide-react';
 import { blogService } from '../services/blogService';
 import { PostEditor } from './PostEditor';
+import { PasswordChange } from './PasswordChange';
 import type { BlogPost as BlogPostType, Author } from '../types/blog';
 
 export function AdminDashboard() {
@@ -26,6 +28,7 @@ export function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'archived'>('all');
   const [showEditor, setShowEditor] = useState(false);
   const [editingPostId, setEditingPostId] = useState<string | undefined>();
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -140,9 +143,17 @@ export function AdminDashboard() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-600 hover:text-gray-900 transition-colors"
+                title="View Blog"
               >
                 <Eye className="h-5 w-5" />
               </a>
+              <button
+                onClick={() => setShowPasswordChange(true)}
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+                title="Change Password"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
@@ -425,6 +436,16 @@ export function AdminDashboard() {
           )}
         </div>
       </div>
+
+      {/* Password Change Modal */}
+      {showPasswordChange && (
+        <PasswordChange
+          onClose={() => setShowPasswordChange(false)}
+          onSuccess={() => {
+            alert('Password changed successfully!');
+          }}
+        />
+      )}
     </div>
   );
 }
