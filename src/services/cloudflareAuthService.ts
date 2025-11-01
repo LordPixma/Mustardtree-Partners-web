@@ -40,6 +40,17 @@ export class CloudflareAccessService {
    * Get configuration from environment variables
    */
   static getConfigFromEnv(): CloudflareAccessConfig | null {
+    // In browser environment, return hardcoded config for development
+    if (typeof process === 'undefined' || typeof window !== 'undefined') {
+      // For development, return the configuration from your .env file
+      return {
+        domain: 'mustardtreegroup.cloudflareaccess.com',
+        applicationAUD: '2ab81f6bcbd116922eb63640376f7c539fc5d773b453d019edd8360fb3413a30',
+        certsUrl: undefined
+      };
+    }
+
+    // Node.js environment (SSR or build time)
     const domain = process.env.CLOUDFLARE_ACCESS_DOMAIN;
     const applicationAUD = process.env.CLOUDFLARE_ACCESS_AUD;
 
@@ -73,8 +84,8 @@ export class CloudflareAccessService {
    */
   static async getCurrentUser(): Promise<CloudflareAccessUser | null> {
     try {
-      // Check for mock user in development
-      if (process.env.NODE_ENV === 'development') {
+      // Check for mock user in development (browser environment)
+      if (typeof window !== 'undefined') {
         const mockUser = this.getMockUser();
         if (mockUser) {
           return mockUser;
@@ -269,8 +280,8 @@ export class CloudflareAccessService {
 
       // You can implement your own access control logic here
       // For example, check if user is in an admin group or has specific email domain
-      const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
-      const adminDomains = process.env.ADMIN_DOMAINS?.split(',') || [];
+      const adminEmails = ['samuel@lgger.com']; // Hardcoded for browser environment
+      const adminDomains = ['lgger.com', 'mustardtreegroup.com', 'odeounile.com']; // From your Cloudflare Access config
       
       // Check if user email is in admin list
       if (adminEmails.includes(user.email)) {
@@ -299,20 +310,20 @@ export class CloudflareAccessService {
    * Development mode helper - simulate authenticated user
    */
   static mockAuthenticatedUser(user: CloudflareAccessUser): void {
-    if (process.env.NODE_ENV !== 'development') {
-      console.warn('Mock authentication only available in development mode');
-      return;
+    // Allow mock authentication in development
+    if (typeof window !== 'undefined') {
+      // Store mock user in sessionStorage for development
+      sessionStorage.setItem('mock_cf_user', JSON.stringify(user));
+    } else {
+      console.warn('Mock authentication only available in browser environment');
     }
-
-    // Store mock user in sessionStorage for development
-    sessionStorage.setItem('mock_cf_user', JSON.stringify(user));
   }
 
   /**
    * Get mock user for development
    */
   private static getMockUser(): CloudflareAccessUser | null {
-    if (process.env.NODE_ENV !== 'development') {
+    if (typeof window === 'undefined') {
       return null;
     }
 

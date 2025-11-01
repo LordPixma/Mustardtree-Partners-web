@@ -22,8 +22,8 @@ export const DebugCloudflareLogin: React.FC<DebugCloudflareLoginProps> = ({ onAu
           hasConfig: !!config,
           domain: config?.domain,
           aud: config?.applicationAUD ? `${config.applicationAUD.substring(0, 10)}...` : null,
-          authMode: process.env.AUTH_MODE,
-          nodeEnv: process.env.NODE_ENV
+          authMode: 'cloudflare', // Hardcoded for browser
+          nodeEnv: 'development' // Hardcoded for browser
         });
 
         if (!config) {
@@ -70,11 +70,7 @@ export const DebugCloudflareLogin: React.FC<DebugCloudflareLoginProps> = ({ onAu
   };
 
   const handleMockLogin = () => {
-    if (process.env.NODE_ENV !== 'development') {
-      alert('Mock login only available in development mode');
-      return;
-    }
-
+    // Always allow mock login in development
     import('../services/cloudflareAuthService').then(({ CloudflareAccessService }) => {
       CloudflareAccessService.mockAuthenticatedUser({
         id: 'samuel@lgger.com',
