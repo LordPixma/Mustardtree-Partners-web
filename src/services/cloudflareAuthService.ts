@@ -252,18 +252,35 @@ export class CloudflareAccessService {
    * Logout from Cloudflare Access
    */
   static logout(): void {
+    // Handle mock authentication logout in development
+    if (typeof window !== 'undefined') {
+      // Clear mock user from sessionStorage
+      sessionStorage.removeItem('mock_cf_user');
+      
+      // Also clear any CF_Authorization cookie
+      document.cookie = 'CF_Authorization=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      
+      // For development with mock auth, just redirect to login
+      if (sessionStorage.getItem('mock_cf_user') === null) {
+        window.location.href = '/admin/login';
+        return;
+      }
+    }
+
+    // Production Cloudflare Access logout
     if (!this.config) {
       const envConfig = this.getConfigFromEnv();
       if (!envConfig) {
         console.error('Cannot logout: Cloudflare Access not configured');
+        // Fallback: redirect to login page
+        if (typeof window !== 'undefined') {
+          window.location.href = '/admin/login';
+        }
         return;
       }
       this.config = envConfig;
     }
 
-    // Clear the CF_Authorization cookie and redirect to logout
-    document.cookie = 'CF_Authorization=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    
     const logoutUrl = `https://${this.config.domain}/cdn-cgi/access/logout`;
     window.location.href = logoutUrl;
   }
