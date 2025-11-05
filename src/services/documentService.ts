@@ -147,7 +147,7 @@ class DocumentService {
     
     // This is a simplified implementation
     // In production, implement proper AWS Signature V4 signing
-    const timestamp = new Date().toISOString().replace(/[:\-]|\.\d{3}/g, '');
+    const timestamp = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
     return `AWS4-HMAC-SHA256 Credential=${this.r2Config.accessKeyId}/${timestamp.slice(0, 8)}/auto/s3/aws4_request, SignedHeaders=host;x-amz-date, Signature=mock-signature`;
   }
 
