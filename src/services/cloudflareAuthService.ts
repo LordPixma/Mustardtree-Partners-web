@@ -12,6 +12,8 @@ export interface CloudflareAccessUser {
   groups?: string[];
   identity_nonce?: string;
   custom?: Record<string, any>;
+  role?: 'admin' | 'staff' | 'customer';
+  customerId?: string;
 }
 
 export interface CloudflareAccessConfig {
@@ -210,11 +212,104 @@ export class CloudflareAccessService {
       return adminIdentifiers.some(identifier => 
         user.groups?.includes(identifier) || 
         user.email?.toLowerCase().includes('admin') ||
-        user.custom?.role === 'admin'
+        user.custom?.role === 'admin' ||
+        user.role === 'admin'
       );
     } catch (error) {
       console.error('Admin access check failed:', error);
       return false;
+    }
+  }
+
+  /**
+   * Check if user has staff access (admin or staff)
+   */
+  static async hasStaffAccess(): Promise<boolean> {
+    try {
+      const user = await this.getCurrentUser();
+      if (!user) return false;
+
+      // Check if user is staff or admin
+      const staffIdentifiers = ['admin', 'administrator', 'staff', 'employee'];
+      
+      return staffIdentifiers.some(identifier => 
+        user.groups?.includes(identifier) || 
+        user.custom?.role === 'staff' ||
+        user.role === 'admin' ||
+        user.role === 'staff'
+      ) || await this.hasAdminAccess();
+    } catch (error) {
+      console.error('Staff access check failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if user has customer access
+   */
+  static async hasCustomerAccess(): Promise<boolean> {
+    try {
+      const user = await this.getCurrentUser();
+      if (!user) return false;
+
+      // Check if user is a customer
+      const customerIdentifiers = ['customer', 'client'];
+      
+      return customerIdentifiers.some(identifier => 
+        user.groups?.includes(identifier) || 
+        user.custom?.role === 'customer' ||
+        user.role === 'customer'
+      );
+    } catch (error) {
+      console.error('Customer access check failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get user role from JWT token
+   */
+  static async getUserRole(): Promise<'admin' | 'staff' | 'customer' | null> {
+    try {
+      const user = await this.getCurrentUser();
+      if (!user) return null;
+
+      // Check explicit role first
+      if (user.role) return user.role;
+
+      // Infer role from groups or custom attributes
+      if (await this.hasAdminAccess()) return 'admin';
+      if (await this.hasStaffAccess()) return 'staff';
+      if (await this.hasCustomerAccess()) return 'customer';
+
+      return null;
+    } catch (error) {
+      console.error('Failed to get user role:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get customer ID for customer users
+   */
+  static async getCustomerId(): Promise<string | null> {
+    try {
+      const user = await this.getCurrentUser();
+      if (!user) return null;
+
+      // Return explicit customer ID if available
+      if (user.customerId) return user.customerId;
+
+      // For customer users, use their email or ID as customer identifier
+      const role = await this.getUserRole();
+      if (role === 'customer') {
+        return user.custom?.customerId || user.id;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Failed to get customer ID:', error);
+      return null;
     }
   }
 
@@ -257,14 +352,22 @@ export class CloudflareAccessService {
   }
 }
 
+// Import React for the hook
+import React from 'react';
+
 /**
  * React hook for Cloudflare Access authentication
  */
 export function useCloudflareAuth() {
+  
   const [user, setUser] = React.useState<CloudflareAccessUser | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [hasAdminAccess, setHasAdminAccess] = React.useState(false);
+  const [hasStaffAccess, setHasStaffAccess] = React.useState(false);
+  const [hasCustomerAccess, setHasCustomerAccess] = React.useState(false);
+  const [userRole, setUserRole] = React.useState<'admin' | 'staff' | 'customer' | null>(null);
+  const [customerId, setCustomerId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const checkAuth = async () => {
@@ -281,15 +384,27 @@ export function useCloudflareAuth() {
         const currentUser = await CloudflareAccessService.getCurrentUser();
         const isAuth = currentUser !== null;
         const hasAdmin = isAuth ? await CloudflareAccessService.hasAdminAccess() : false;
+        const hasStaff = isAuth ? await CloudflareAccessService.hasStaffAccess() : false;
+        const hasCustomer = isAuth ? await CloudflareAccessService.hasCustomerAccess() : false;
+        const role = isAuth ? await CloudflareAccessService.getUserRole() : null;
+        const customerIdValue = isAuth ? await CloudflareAccessService.getCustomerId() : null;
 
         setUser(currentUser);
         setIsAuthenticated(isAuth);
         setHasAdminAccess(hasAdmin);
+        setHasStaffAccess(hasStaff);
+        setHasCustomerAccess(hasCustomer);
+        setUserRole(role);
+        setCustomerId(customerIdValue);
       } catch (error) {
         console.error('Auth check failed:', error);
         setUser(null);
         setIsAuthenticated(false);
         setHasAdminAccess(false);
+        setHasStaffAccess(false);
+        setHasCustomerAccess(false);
+        setUserRole(null);
+        setCustomerId(null);
       } finally {
         setIsLoading(false);
       }
@@ -307,9 +422,10 @@ export function useCloudflareAuth() {
     isLoading,
     isAuthenticated,
     hasAdminAccess,
+    hasStaffAccess,
+    hasCustomerAccess,
+    userRole,
+    customerId,
     logout
   };
 }
-
-// Import React for the hook
-import React from 'react';

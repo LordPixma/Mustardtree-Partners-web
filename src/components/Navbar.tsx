@@ -45,6 +45,7 @@ export function Navbar() {
     { name: 'Services', id: 'services', isSection: true },
     { name: 'Why Us', id: 'why-choose-us', isSection: true },
     { name: 'Blog', path: '/blog', isSection: false },
+    { name: 'Portal', path: '/portal', isSection: false },
     { name: 'Contact', id: 'contact', isSection: true }
   ];
   return <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-transparent'}`}>

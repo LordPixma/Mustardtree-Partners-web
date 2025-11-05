@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProductionLogin } from './ProductionLogin';
 import { AdminDashboard } from './AdminDashboard';
+import { AdminDocumentManagement } from './AdminDocumentManagement';
 import { useCloudflareAuth } from '../services/cloudflareAuthService';
 import { Loader2 } from 'lucide-react';
 
@@ -47,6 +48,16 @@ export const AdminRouter: React.FC = () => {
         element={
           <ProtectedRoute>
             <AdminDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Document Management */}
+      <Route 
+        path="/documents" 
+        element={
+          <ProtectedRoute>
+            <AdminDocumentManagement />
           </ProtectedRoute>
         } 
       />

@@ -11,7 +11,10 @@
     "generate-credentials": "node scripts/generate-credentials.js",
     "generate-credentials:help": "node scripts/generate-credentials.js --help",
     "migrate-auth": "node scripts/migrate-auth.js",
-    "migrate-auth:help": "node scripts/migrate-auth.js --help"
+    "migrate-auth:help": "node scripts/migrate-auth.js --help",
+    "setup-r2": "wrangler r2 bucket create mustardtree-documents && wrangler r2 bucket cors set mustardtree-documents --file cors.json",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=mustardtree-web",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -39,6 +42,6 @@
     "postcss": "latest",
     "tailwindcss": "3.4.17",
     "typescript": "^5.5.4",
-    "vite": "^5.2.0"
+    "vite": "^7.2.0"
   }
 }

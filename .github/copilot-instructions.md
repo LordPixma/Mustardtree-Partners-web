@@ -5,30 +5,47 @@ This file gives focused, practical instructions for AI coding agents working on 
 ## Quick facts
 
 - Tech stack: Vite + React (TypeScript), Tailwind CSS, Framer Motion, lucide-react icons.
+- Authentication: **Cloudflare Access** (Zero Trust) for production admin access.
 - Run locally: `npm install` then `npm run dev` (see `package.json` scripts).
 - Build: `npm run build`. Lint: `npm run lint`.
 
 ## Key files and where to start
 
-- `src/index.tsx` — app entry. Currently renders `<App />` directly.
-- `src/App.tsx` — top-level composition: renders site sections (Navbar, Hero, About, Services, WhyChooseUs, Contact, Footer).
-- `src/AppRouter.tsx` — router wrapper using `react-router-dom`. NOTE: not wired in `index.tsx` by default.
-- `src/components/` — page sections and shared UI (Navbar.tsx, Hero.tsx, About.tsx, Services.tsx, WhyChooseUs.tsx, Contact.tsx, Footer.tsx).
+- `src/index.tsx` — app entry. **Currently renders `<AppRouter />`** (router is now active).
+- `src/AppRouter.tsx` — main router with routes: `/`, `/privacy`, `/terms`, `/blog`, `/blog/:slug`, `/portal`, `/admin/*`.
+- `src/App.tsx` — single-page layout: renders site sections (Navbar, Hero, About, Services, WhyChooseUs, Contact, Footer).
+- `src/components/AdminRouter.tsx` — protected admin routes using Cloudflare Access authentication.
+- `src/components/CustomerPortal.tsx` — customer-facing document portal with upload/download capabilities.
+- `src/components/AdminDocumentManagement.tsx` — staff interface for managing customer documents.
+- `src/services/cloudflareAuthService.ts` — Cloudflare Access JWT verification and user management with role-based access.
+- `src/services/documentService.ts` — document CRUD operations with Cloudflare R2 integration and version control.
+- `src/services/blogService.ts` — blog CRUD operations with localStorage (ready for backend migration).
+- `src/types/documents.ts` — TypeScript interfaces for document management system.
 - `src/lib/utils.ts` — `cn(...inputs)` helper that composes classes using `clsx` + `twMerge`. Prefer `cn()` for Tailwind class merging.
-- `public/` — static assets. Example: `/mustardtree_300.png` referenced by `Navbar.tsx`.
+- `public/` — static assets with Cloudflare Pages config (`_headers`, `_redirects`).
+- `docs/CUSTOMER-PORTAL-SETUP.md` — comprehensive setup guide for document portal.
+- `docs/DEPLOYMENT-GUIDE.md` — step-by-step deployment instructions.
 
 ## Project-specific conventions and idioms
 
-- Section navigation uses element ids + smooth scroll. Example: `Navbar.tsx` defines a `navLinks` array of `{ name, id }` and `scrollToSection(id)` which calls `document.getElementById(id).scrollIntoView({ behavior: 'smooth' })`. When adding a new nav link, add the id to the target section component (`<section id="your-id">`).
-- Class composition: use the `cn()` function from `src/lib/utils.ts` instead of manual string concatenation to avoid conflicting Tailwind classes. Example: `className={cn('px-4', condition && 'text-white')}`.
-- Animations: entry/scroll animations use `framer-motion` (see `Hero.tsx`). Follow the same pattern of `initial`, `animate`, `transition` props when adding animated sections.
-- Responsive patterns: prefer Tailwind breakpoints and utility-first composition. Desktop navigation is in `md:flex` while mobile uses `md:hidden` + a toggled menu in `Navbar.tsx`.
+- **Authentication**: Production uses Cloudflare Access JWT verification with role-based access (admin, staff, customer). No password management required.
+- **Document management**: `documentService.ts` integrates with Cloudflare R2 for storage, includes version control, audit logging, and permission management.
+- **Data layer**: Services use localStorage for development/demo with sanitized inputs. Production ready for backend API integration.
+- **Role-based access**: Three user roles (admin, staff, customer) with different permissions. Use `hasAdminAccess`, `hasStaffAccess`, `hasCustomerAccess` checks.
+- **File handling**: 100MB upload limit, MIME type validation, automatic version control, and secure R2 storage with presigned URLs.
+- **Section navigation**: element ids + smooth scroll. `Navbar.tsx` defines `navLinks` array, `scrollToSection(id)` calls `document.getElementById(id).scrollIntoView({ behavior: 'smooth' })`.
+- **Class composition**: use `cn()` from `src/lib/utils.ts` for Tailwind class merging. Example: `className={cn('px-4', condition && 'text-white')}`.
+- **Animations**: `framer-motion` with `initial`, `animate`, `transition` pattern (see `Hero.tsx`).
+- **Type safety**: All data uses TypeScript interfaces from `src/types/`. Document routes require proper role validation.
 
 ## Routing & pages
 
-- The project has `react-router-dom` installed and `src/AppRouter.tsx` is the router wrapper. If you need route-based pages (instead of a single scrolling page), do one of the following:
-  - Replace render in `src/index.tsx` with `<AppRouter />` and add route elements in `AppRouter.tsx`.
-  - Or add new route components and import them into `AppRouter.tsx`. Keep `App.tsx` as the site shell for single-page behavior.
+- **Active routing**: `src/index.tsx` renders `<AppRouter />`. Routes: `/` (single-page site), `/blog`, `/blog/:slug`, `/portal` (customer documents), `/admin/*` (staff/admin).
+- **Customer portal**: `/portal` route serves `<CustomerPortal />` with role-based document access, upload/download, and version history.
+- **Admin routes**: `/admin/*` wrapped in `<AdminLayout />` with Cloudflare Access. Includes `/admin/documents` for customer document management.
+- **Authentication flow**: Cloudflare Access → JWT verification → role assignment → route access. Three roles: admin, staff, customer.
+- **Blog system**: Dynamic routing with slug-based URLs. Posts use `generateSlug()` helper in `blogService.ts`.
+- **Error boundaries**: `<ErrorBoundary />` wraps the entire app to catch route and component errors.
 
 ## Assets & public files
 
@@ -49,15 +66,30 @@ This file gives focused, practical instructions for AI coding agents working on 
 
   Add target section in `src/components/NewSection.tsx`: `<section id="new-section">...</section>` and include `<NewSection />` in `App.tsx` where appropriate.
 
-- Wire routing (switch to route-based pages):
+- Add a new route (edit `src/AppRouter.tsx`):
 
-  1. In `src/index.tsx` render `<AppRouter />` instead of `<App />`.
-  2. Add a `<Route path="/new" element={<NewPage />} />` inside `src/AppRouter.tsx`.
+  ```tsx
+  <Route path="/new-page" element={<NewPage />} />
+  ```
+
+- Create blog content (in admin dashboard or via `blogService.ts`):
+
+  ```tsx
+  await blogService.createPost({
+    title: "New Post",
+    content: "Markdown content here",
+    excerpt: "Brief summary",
+    authorId: "1",
+    status: "published",
+    seo: { metaTitle: "SEO title", metaDescription: "SEO description", keywords: [] }
+  });
+  ```
 
 ## What not to assume
 
-- The repo was scaffolded from a visual template (see `README.md`). Some files (like `AppRouter.tsx`) may be present but unused; confirm by checking `src/index.tsx` before changing global wiring.
+- The repo was scaffolded from a visual template (see `README.md`). The routing system is now fully active (`AppRouter` is wired in `index.tsx`).
 - There are currently no tests — do not add test-related changes without discussing scope.
+- **Security**: Admin authentication is production-ready via Cloudflare Access. Never bypass `hasAdminAccess` checks or authentication guards.
 
 ## When editing code, prefer small, focused PRs
 

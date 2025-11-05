@@ -1,0 +1,32 @@
+[
+  {
+    "AllowedOrigins": [
+      "https://mustardtree-web.pages.dev",
+      "https://mustardtreegroup.com",
+      "http://localhost:5173",
+      "http://localhost:3000"
+    ],
+    "AllowedMethods": [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "HEAD",
+      "OPTIONS"
+    ],
+    "AllowedHeaders": [
+      "Content-Type",
+      "Content-Length",
+      "Authorization",
+      "X-Amz-Date",
+      "X-Api-Key",
+      "X-Amz-Security-Token",
+      "X-Amz-Content-Sha256"
+    ],
+    "ExposeHeaders": [
+      "ETag",
+      "x-amz-version-id"
+    ],
+    "MaxAgeSeconds": 3600
+  }
+]
