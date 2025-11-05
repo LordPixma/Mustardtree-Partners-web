@@ -36,13 +36,15 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
   // Load documents and folders
   useEffect(() => {
     const loadData = async () => {
-      if (!customerId) return;
-      
       try {
         setIsLoading(true);
+        
+        // Use customerId if available, otherwise use demo customer for development
+        const customerIdToUse = customerId || 'demo-customer-001';
+        
         const [docsData, foldersData] = await Promise.all([
-          documentService.getDocuments({ customerId }),
-          documentService.getFolders(customerId)
+          documentService.getDocuments({ customerId: customerIdToUse }),
+          documentService.getFolders(customerIdToUse)
         ]);
         
         setDocuments(docsData);
@@ -55,7 +57,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
       }
     };
 
-    if (customerId) {
+    // Load data when auth loading is complete, regardless of customerId
+    if (!authLoading) {
       loadData();
     }
   }, [customerId, onError]);
@@ -145,12 +148,12 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
       
       if (downloadUrl) {
         // Create a temporary link to trigger download
-        const link = document.createElement('a');
+        const link = globalThis.document.createElement('a');
         link.href = downloadUrl;
         link.download = document.name;
-        document.body.appendChild(link);
+        globalThis.document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        globalThis.document.body.removeChild(link);
       }
     } catch (error) {
       console.error('Download failed:', error);
@@ -183,7 +186,14 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading customer portal...</p>
+          <p className="text-gray-600">
+            {authLoading ? 'Authenticating...' : 'Loading customer portal...'}
+          </p>
+          {!authLoading && !customerId && (
+            <p className="text-sm text-blue-600 mt-2">
+              Running in demo mode - Cloudflare Access not configured
+            </p>
+          )}
         </div>
       </div>
     );
