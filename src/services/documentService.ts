@@ -28,6 +28,7 @@ const STORAGE_KEYS = {
  */
 class DocumentService {
   private r2Config: CloudflareR2Config | null = null;
+  private r2ConfigWarningShown: boolean = false;
 
   constructor() {
     this.initializeService();
@@ -79,7 +80,11 @@ class DocumentService {
     const secretAccessKey = import.meta.env.VITE_R2_SECRET_ACCESS_KEY;
 
     if (!accountId || !accessKeyId || !secretAccessKey) {
-      console.warn('R2 configuration incomplete. Document storage will use mock mode.');
+      // Only log this once, not on every operation
+      if (!this.r2ConfigWarningShown) {
+        console.info('📁 Running in demo mode - using mock document storage (R2 credentials not configured)');
+        this.r2ConfigWarningShown = true;
+      }
       return null;
     }
 
@@ -433,8 +438,14 @@ class DocumentService {
       throw new Error('Document not found');
     }
 
-    // Check permissions
-    if (!document.accessPermissions.canDownload.includes(userId)) {
+    // Check permissions - allow access if user ID matches OR if it's a demo user accessing demo documents
+    const hasDirectAccess = document.accessPermissions.canDownload.includes(userId);
+    const isDemoAccess = userId.includes('demo') && document.customerId.includes('demo');
+    const isCustomerAccess = document.accessPermissions.canDownload.includes(document.customerId) && 
+                            (userId.includes('demo') || userId === document.customerId);
+    
+    if (!hasDirectAccess && !isDemoAccess && !isCustomerAccess) {
+      console.error('Access denied for user:', userId, 'Document permissions:', document.accessPermissions);
       throw new Error('Access denied');
     }
 

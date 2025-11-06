@@ -23,7 +23,7 @@ interface CustomerPortalProps {
 }
 
 export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
-  const { user, isLoading: authLoading, hasCustomerAccess, customerId, userRole } = useCloudflareAuth();
+  const { user, isLoading: authLoading, hasCustomerAccess, customerId, userRole, logout } = useCloudflareAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [folders, setFolders] = useState<DocumentFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | undefined>();
@@ -167,18 +167,44 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
       });
       
       if (downloadUrl) {
-        // Create a temporary link to trigger download
-        const link = globalThis.document.createElement('a');
-        link.href = downloadUrl;
-        link.download = document.name;
-        globalThis.document.body.appendChild(link);
-        link.click();
-        globalThis.document.body.removeChild(link);
+        // Check if it's a mock URL (demo mode)
+        if (downloadUrl.includes('mock-r2-url.com')) {
+          // In demo mode, create a fake download with document content
+          const blob = new Blob([`This is a demo document: ${document.name}\n\nIn production, this would be the actual file content.`], {
+            type: 'text/plain'
+          });
+          const mockUrl = URL.createObjectURL(blob);
+          
+          const link = globalThis.document.createElement('a');
+          link.href = mockUrl;
+          link.download = document.name;
+          globalThis.document.body.appendChild(link);
+          link.click();
+          globalThis.document.body.removeChild(link);
+          
+          // Clean up the blob URL
+          setTimeout(() => URL.revokeObjectURL(mockUrl), 100);
+        } else {
+          // Production download
+          const link = globalThis.document.createElement('a');
+          link.href = downloadUrl;
+          link.download = document.name;
+          globalThis.document.body.appendChild(link);
+          link.click();
+          globalThis.document.body.removeChild(link);
+        }
+      } else {
+        onError?.('Download URL not available');
       }
     } catch (error) {
       console.error('Download failed:', error);
       onError?.(`Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  };
+
+  // Handle document view (same as download for now)
+  const handleView = async (document: Document, version?: number) => {
+    await handleDownload(document, version);
   };
 
   // Format file size
@@ -246,6 +272,14 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                 {userRole === 'customer' ? 'Customer' : userRole === 'admin' ? 'Administrator' : 'Staff'}
               </span>
+              {user && (
+                <button
+                  onClick={logout}
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Logout
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -436,7 +470,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
                                   Download
                                 </button>
                                 <button 
-                                  onClick={() => handleDownload(document)}
+                                  onClick={() => handleView(document)}
                                   className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
                                 >
                                   <Eye className="w-3 h-3 mr-1" />

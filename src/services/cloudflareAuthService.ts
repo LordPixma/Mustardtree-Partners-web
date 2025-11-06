@@ -71,6 +71,7 @@ export class CloudflareAccessService {
       // Get CF_Authorization cookie containing the JWT
       const jwt = this.getCFAuthCookie();
       if (!jwt) {
+        // No JWT cookie found - this is normal for demo mode
         return null;
       }
 
@@ -78,7 +79,11 @@ export class CloudflareAccessService {
       const user = await this.verifyJWT(jwt);
       return user;
     } catch (error) {
-      console.error('Failed to get current user:', error);
+      // Only log error if it's not a missing key (which is expected in demo mode)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!errorMessage.includes('Public key not found')) {
+        console.error('Failed to get current user:', error);
+      }
       return null;
     }
   }
@@ -383,27 +388,54 @@ export function useCloudflareAuth() {
         // Check authentication
         const currentUser = await CloudflareAccessService.getCurrentUser();
         const isAuth = currentUser !== null;
-        const hasAdmin = isAuth ? await CloudflareAccessService.hasAdminAccess() : false;
-        const hasStaff = isAuth ? await CloudflareAccessService.hasStaffAccess() : false;
-        const hasCustomer = isAuth ? await CloudflareAccessService.hasCustomerAccess() : false;
-        const role = isAuth ? await CloudflareAccessService.getUserRole() : null;
-        const customerIdValue = isAuth ? await CloudflareAccessService.getCustomerId() : null;
+        
+        if (isAuth) {
+          // Production mode with real authentication
+          const hasAdmin = await CloudflareAccessService.hasAdminAccess();
+          const hasStaff = await CloudflareAccessService.hasStaffAccess();
+          const hasCustomer = await CloudflareAccessService.hasCustomerAccess();
+          const role = await CloudflareAccessService.getUserRole();
+          const customerIdValue = await CloudflareAccessService.getCustomerId();
 
-        setUser(currentUser);
-        setIsAuthenticated(isAuth);
-        setHasAdminAccess(hasAdmin);
-        setHasStaffAccess(hasStaff);
-        setHasCustomerAccess(hasCustomer);
-        setUserRole(role);
-        setCustomerId(customerIdValue);
+          setUser(currentUser);
+          setIsAuthenticated(true);
+          setHasAdminAccess(hasAdmin);
+          setHasStaffAccess(hasStaff);
+          setHasCustomerAccess(hasCustomer);
+          setUserRole(role);
+          setCustomerId(customerIdValue);
+        } else {
+          // Demo mode - set default customer role
+          console.log('Demo mode: No Cloudflare Access authentication detected');
+          const demoUser = {
+            id: 'demo-customer-001',
+            email: 'demo@customer.com',
+            name: 'Demo Customer'
+          };
+          
+          setUser(demoUser);
+          setIsAuthenticated(false); // Not truly authenticated
+          setHasAdminAccess(false);
+          setHasStaffAccess(false);
+          setHasCustomerAccess(true); // Demo user is customer
+          setUserRole('customer'); // Always customer in demo mode
+          setCustomerId(null); // No customer ID in demo mode
+        }
       } catch (error) {
         console.error('Auth check failed:', error);
-        setUser(null);
+        // Fallback to demo mode
+        const demoUser = {
+          id: 'demo-customer-001',
+          email: 'demo@customer.com',
+          name: 'Demo Customer'
+        };
+        
+        setUser(demoUser);
         setIsAuthenticated(false);
         setHasAdminAccess(false);
         setHasStaffAccess(false);
-        setHasCustomerAccess(false);
-        setUserRole(null);
+        setHasCustomerAccess(true);
+        setUserRole('customer');
         setCustomerId(null);
       } finally {
         setIsLoading(false);
@@ -414,8 +446,14 @@ export function useCloudflareAuth() {
   }, []);
 
   const logout = React.useCallback(() => {
-    CloudflareAccessService.logout();
-  }, []);
+    if (isAuthenticated) {
+      // Real Cloudflare Access logout
+      CloudflareAccessService.logout();
+    } else {
+      // Demo mode - just redirect to home
+      window.location.href = '/';
+    }
+  }, [isAuthenticated]);
 
   return {
     user,
