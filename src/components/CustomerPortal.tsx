@@ -38,30 +38,47 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
     const loadData = async () => {
       try {
         setIsLoading(true);
+        console.log('CustomerPortal: Starting data load...');
         
         // Use customerId if available, otherwise use demo customer for development
         const customerIdToUse = customerId || 'demo-customer-001';
+        console.log('CustomerPortal: Using customer ID:', customerIdToUse);
         
-        const [docsData, foldersData] = await Promise.all([
+        // Add timeout to prevent infinite loading
+        const timeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Load timeout')), 5000)
+        );
+        
+        const dataPromise = Promise.all([
           documentService.getDocuments({ customerId: customerIdToUse }),
           documentService.getFolders(customerIdToUse)
         ]);
         
+        const [docsData, foldersData] = await Promise.race([dataPromise, timeout]) as [any[], any[]];
+        
+        console.log('CustomerPortal: Loaded documents:', docsData.length);
+        console.log('CustomerPortal: Loaded folders:', foldersData.length);
+        
         setDocuments(docsData);
         setFolders(foldersData);
       } catch (error) {
-        console.error('Failed to load data:', error);
+        console.error('CustomerPortal: Failed to load data:', error);
+        // Set empty arrays instead of hanging
+        setDocuments([]);
+        setFolders([]);
         onError?.('Failed to load documents and folders');
       } finally {
+        console.log('CustomerPortal: Data load complete, setting isLoading to false');
         setIsLoading(false);
       }
     };
 
     // Load data when auth loading is complete, regardless of customerId
     if (!authLoading) {
+      console.log('CustomerPortal: Auth loading complete, starting data load');
       loadData();
     }
-  }, [customerId, onError]);
+  }, [authLoading, customerId, onError]);
 
   // Filter documents based on search and folder
   const filteredDocuments = documents.filter(doc => {
@@ -181,31 +198,30 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
     });
   };
 
-  if (authLoading || isLoading) {
+  // Show loading only for auth, not for data
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">
-            {authLoading ? 'Authenticating...' : 'Loading customer portal...'}
-          </p>
-          {!authLoading && !customerId && (
-            <p className="text-sm text-blue-600 mt-2">
-              Running in demo mode - Cloudflare Access not configured
-            </p>
-          )}
+          <p className="text-gray-600">Authenticating...</p>
         </div>
       </div>
     );
   }
 
-  if (!hasCustomerAccess && userRole !== 'admin' && userRole !== 'staff') {
+  // Allow access in demo mode (when customerId is null) or when user has proper permissions
+  const isDemoMode = !customerId;
+  const hasProperAccess = hasCustomerAccess || userRole === 'admin' || userRole === 'staff';
+  
+  if (!isDemoMode && !hasProperAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
           <p className="text-gray-600">You don't have permission to access the customer portal.</p>
+          <p className="text-sm text-gray-500 mt-2">Please contact your administrator for access.</p>
         </div>
       </div>
     );
@@ -340,7 +356,15 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
               </div>
               
               <div className="divide-y divide-gray-200">
-                {filteredDocuments.length === 0 ? (
+                {isLoading ? (
+                  <div className="px-6 py-12 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+                    <p className="text-gray-600">Loading documents...</p>
+                    {!customerId && (
+                      <p className="text-sm text-blue-600 mt-2">Demo mode - Cloudflare Access not configured</p>
+                    )}
+                  </div>
+                ) : filteredDocuments.length === 0 ? (
                   <div className="px-6 py-12 text-center">
                     <File className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-2 text-sm font-medium text-gray-900">No documents</h3>
