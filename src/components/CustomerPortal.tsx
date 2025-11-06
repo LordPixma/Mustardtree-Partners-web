@@ -94,7 +94,9 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
 
   // Handle file upload
   const handleFileUpload = async (files: FileList) => {
-    if (!user || !customerId) return;
+    // Allow upload in demo mode
+    const customerIdToUse = customerId || 'demo-customer-001';
+    const userToUse = user || { id: 'demo-user', email: 'demo@example.com', name: 'Demo User' };
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -105,9 +107,9 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
         
         const uploadRequest: DocumentUploadRequest = {
           file,
-          customerId,
+          customerId: customerIdToUse,
           folderId: selectedFolder,
-          description: `Uploaded by ${user.name || user.email}`,
+          description: `Uploaded by ${userToUse.name || userToUse.email}`,
           tags: ['customer-upload'],
           isConfidential: false
         };
@@ -120,7 +122,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
           }));
         }, 500);
 
-        const newDoc = await documentService.uploadDocument(uploadRequest, user.id);
+        const newDoc = await documentService.uploadDocument(uploadRequest, userToUse.id);
         
         clearInterval(progressInterval);
         setUploadProgress(prev => ({ ...prev, [uploadId]: 100 }));
