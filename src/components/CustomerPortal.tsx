@@ -256,7 +256,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
               
-              {(userRole === 'customer' || userRole === 'admin' || userRole === 'staff') && (
+              {(userRole === 'customer' || userRole === 'admin' || userRole === 'staff' || isDemoMode) && (
                 <button
                   onClick={() => setShowUpload(true)}
                   className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mb-4"
