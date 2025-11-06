@@ -156,13 +156,14 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
 
   // Handle document download
   const handleDownload = async (document: Document, version?: number) => {
-    if (!user) return;
+    // Allow download in demo mode
+    const userToUse = user || { id: 'demo-user', email: 'demo@example.com', name: 'Demo User' };
     
     try {
       const downloadUrl = await documentService.downloadDocument({
         documentId: document.id,
         version,
-        userId: user.id
+        userId: userToUse.id
       });
       
       if (downloadUrl) {
@@ -434,7 +435,10 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
                                   <Download className="w-3 h-3 mr-1" />
                                   Download
                                 </button>
-                                <button className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                                <button 
+                                  onClick={() => handleDownload(document)}
+                                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                                >
                                   <Eye className="w-3 h-3 mr-1" />
                                   View
                                 </button>
