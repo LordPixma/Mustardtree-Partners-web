@@ -43,6 +43,7 @@ export function Navbar() {
     { name: 'Home', id: 'hero', isSection: true },
     { name: 'About', id: 'about', isSection: true },
     { name: 'Services', id: 'services', isSection: true },
+    { name: 'GIS', path: '/services/gis', isSection: false },
     { name: 'Why Us', id: 'why-choose-us', isSection: true },
     { name: 'Blog', path: '/blog', isSection: false },
     { name: 'Portal', path: '/portal', isSection: false },

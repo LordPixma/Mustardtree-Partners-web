@@ -4,6 +4,7 @@ import { Privacy } from "./components/Privacy";
 import { Terms } from "./components/Terms";
 import { Blog } from "./components/Blog";
 import { BlogPost } from "./components/BlogPost";
+import { GisServices } from "./components/GisServices";
 import { AdminLayout } from "./components/AdminRouter";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { CustomerPortal } from "./components/CustomerPortal";
@@ -23,6 +24,7 @@ export function AppRouter() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/services/gis" element={<GisServices />} />
           
           {/* Customer Portal - Protected by Cloudflare Access */}
           <Route path="/portal" element={<CustomerPortal />} />
