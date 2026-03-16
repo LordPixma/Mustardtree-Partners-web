@@ -15,6 +15,8 @@ export interface Env {
   MAX_FILE_SIZE: string;
   ALLOWED_FILE_TYPES: string;
   PRESIGNED_URL_EXPIRY: string;
+  RESEND_API_KEY?: string;
+  EMAIL_FROM?: string;
 }
 
 interface AuthUser {
@@ -1209,6 +1211,40 @@ async function handleGetMe(user: AuthUser): Promise<Response> {
 
 // ----- NOTIFICATION EMAIL PROCESSOR -----
 
+async function sendEmail(env: Env, to: string, subject: string, htmlBody: string): Promise<{ ok: boolean; error?: string }> {
+  // Try Resend API if key is configured
+  if (env.RESEND_API_KEY) {
+    const resp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: env.EMAIL_FROM || 'MustardTree Partners <noreply@mustardtreegroup.com>',
+        to: [to],
+        subject,
+        html: htmlBody,
+      }),
+    });
+    if (resp.ok || resp.status === 200) return { ok: true };
+    const err = await resp.text();
+    return { ok: false, error: err.slice(0, 500) };
+  }
+
+  // Fallback: MailChannels (requires domain authorization)
+  const resp = await fetch('https://api.mailchannels.net/tx/v1/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      personalizations: [{ to: [{ email: to }] }],
+      from: { email: 'noreply@mustardtreegroup.com', name: 'MustardTree Partners' },
+      subject,
+      content: [{ type: 'text/html', value: htmlBody }],
+    }),
+  });
+  if (resp.ok || resp.status === 202) return { ok: true };
+  const err = await resp.text();
+  return { ok: false, error: err.slice(0, 500) };
+}
+
 async function processNotificationQueue(env: Env): Promise<void> {
   const pending = await env.DB.prepare(
     "SELECT * FROM notifications WHERE status = 'pending' ORDER BY created_at LIMIT 10"
@@ -1216,23 +1252,11 @@ async function processNotificationQueue(env: Env): Promise<void> {
 
   for (const row of pending.results || []) {
     try {
-      // Send via MailChannels (free for Cloudflare Workers)
-      const mailResponse = await fetch('https://api.mailchannels.net/tx/v1/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: row.recipient_email as string }] }],
-          from: { email: 'noreply@mustardtreegroup.com', name: 'MustardTree Partners' },
-          subject: row.subject as string,
-          content: [{ type: 'text/html', value: row.body as string }],
-        }),
-      });
-
-      if (mailResponse.ok || mailResponse.status === 202) {
+      const result = await sendEmail(env, row.recipient_email as string, row.subject as string, row.body as string);
+      if (result.ok) {
         await env.DB.prepare("UPDATE notifications SET status = 'sent' WHERE id = ?").bind(row.id).run();
       } else {
-        const errText = await mailResponse.text();
-        await env.DB.prepare("UPDATE notifications SET status = 'failed', error = ? WHERE id = ?").bind(errText.slice(0, 500), row.id).run();
+        await env.DB.prepare("UPDATE notifications SET status = 'failed', error = ? WHERE id = ?").bind(result.error || 'Unknown', row.id).run();
       }
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : 'Unknown error';
