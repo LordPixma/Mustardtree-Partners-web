@@ -404,24 +404,8 @@ export function useCloudflareAuth() {
           setHasCustomerAccess(hasCustomer);
           setUserRole(role);
           setCustomerId(customerIdValue);
-        } else if (import.meta.env.DEV) {
-          // Demo mode - ONLY available in development builds
-          console.log('Dev mode: No Cloudflare Access authentication detected');
-          const demoUser = {
-            id: 'demo-customer-001',
-            email: 'demo@customer.com',
-            name: 'Demo Customer'
-          };
-
-          setUser(demoUser);
-          setIsAuthenticated(false); // Not truly authenticated
-          setHasAdminAccess(false);
-          setHasStaffAccess(false);
-          setHasCustomerAccess(true);
-          setUserRole('customer');
-          setCustomerId(null);
         } else {
-          // Production with no auth - user is not authenticated
+          // No auth detected - user is not authenticated
           setUser(null);
           setIsAuthenticated(false);
           setHasAdminAccess(false);
@@ -432,30 +416,13 @@ export function useCloudflareAuth() {
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        if (import.meta.env.DEV) {
-          // Fallback to demo mode only in development
-          const demoUser = {
-            id: 'demo-customer-001',
-            email: 'demo@customer.com',
-            name: 'Demo Customer'
-          };
-          setUser(demoUser);
-          setIsAuthenticated(false);
-          setHasAdminAccess(false);
-          setHasStaffAccess(false);
-          setHasCustomerAccess(true);
-          setUserRole('customer');
-          setCustomerId(null);
-        } else {
-          // Production - auth failed, user is not authenticated
-          setUser(null);
-          setIsAuthenticated(false);
-          setHasAdminAccess(false);
-          setHasStaffAccess(false);
-          setHasCustomerAccess(false);
-          setUserRole(null);
-          setCustomerId(null);
-        }
+        setUser(null);
+        setIsAuthenticated(false);
+        setHasAdminAccess(false);
+        setHasStaffAccess(false);
+        setHasCustomerAccess(false);
+        setUserRole(null);
+        setCustomerId(null);
       } finally {
         setIsLoading(false);
       }

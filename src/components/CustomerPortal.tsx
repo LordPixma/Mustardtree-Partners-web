@@ -153,7 +153,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const isDev = import.meta.env.DEV;
   const isAdminOrStaff = userRole === 'admin' || userRole === 'staff';
 
   const showNotification = useCallback((type: 'success' | 'error', message: string) => {
@@ -518,39 +517,13 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
     return folders.find(f => f.id === selectedFolder)?.name || 'Unknown';
   }, [selectedFolder, folders]);
 
-  // ----- Auth Guards -----
+  // Auth loading state (PortalRoute handles unauthenticated redirect)
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Authenticating...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const hasProperAccess = hasCustomerAccess || isAdminOrStaff;
-  if (!isDev && !isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Required</h2>
-          <p className="text-gray-600">Please log in to access the customer portal.</p>
-          <button onClick={() => window.location.href = '/admin/login'} className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Log In</button>
-        </div>
-      </div>
-    );
-  }
-
-  if (isAuthenticated && !hasProperAccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600">You don't have permission to access the customer portal.</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading portal...</p>
         </div>
       </div>
     );
@@ -607,9 +580,6 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
               <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
                 {userRole === 'customer' ? 'Customer' : userRole === 'admin' ? 'Admin' : userRole === 'staff' ? 'Staff' : 'User'}
               </span>
-              {isDev && !isAuthenticated && (
-                <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Dev</span>
-              )}
               {user && (
                 <button onClick={logout} className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-sm rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">Logout</button>
               )}
