@@ -14,6 +14,9 @@
     "migrate-auth:help": "node scripts/migrate-auth.js --help",
     "setup-r2": "wrangler r2 bucket create mustardtree-documents && wrangler r2 bucket cors set mustardtree-documents --file cors.json",
     "deploy": "npm run build && wrangler pages deploy dist --project-name=mustardtree-web",
+    "deploy:api": "cd worker && npm run deploy",
+    "dev:api": "cd worker && npm run dev",
+    "db:setup": "cd worker && npm run db:create && npm run db:migrate",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

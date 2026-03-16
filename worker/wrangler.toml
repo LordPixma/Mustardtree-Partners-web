@@ -1,0 +1,27 @@
+name = "mustardtree-api"
+main = "src/index.ts"
+compatibility_date = "2024-10-28"
+
+[vars]
+ENVIRONMENT = "production"
+ALLOWED_ORIGINS = "https://mustardtreegroup.com,https://mustardtree-web.pages.dev,https://mustardtree-api.samuel-1e5.workers.dev"
+CF_ACCESS_DOMAIN = "mustardtreegroup.com"
+CF_ACCESS_AUD = "2ab81f6bcbd116922eb63640376f7c539fc5d773b453d019edd8360fb3413a30"
+MAX_FILE_SIZE = "104857600"
+ALLOWED_FILE_TYPES = "application/pdf,image/jpeg,image/png,image/gif,image/webp,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/csv"
+PRESIGNED_URL_EXPIRY = "3600"
+
+# R2 bucket binding
+[[r2_buckets]]
+binding = "DOCUMENTS_BUCKET"
+bucket_name = "mustardtree-documents"
+
+# D1 database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "mustardtree-portal"
+database_id = "692fcd4b-9757-4d00-b821-60300e0c00e5"
+
+# Development overrides
+[env.dev]
+vars = { ENVIRONMENT = "development", ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173" }

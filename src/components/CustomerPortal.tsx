@@ -1,136 +1,148 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useCloudflareAuth } from '../services/cloudflareAuthService';
-import { documentService } from '../services/documentService';
-import type { Document, DocumentFolder, DocumentUploadRequest } from '../types/documents';
-import { 
-  Upload, 
-  Download, 
-  File, 
-  Folder, 
-  Search, 
+import { documentApi, folderApi, ApiError } from '../services/apiClient';
+import type { Document, DocumentFolder } from '../types/documents';
+import {
+  Upload,
+  Download,
+  File,
+  Folder,
+  Search,
   Filter,
   Eye,
   Clock,
   Tag,
   AlertCircle,
   CheckCircle,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  X,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { validateDocumentUpload } from '../utils/fileValidation';
 
 interface CustomerPortalProps {
   onError?: (error: string) => void;
 }
 
 export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
-  const { user, isLoading: authLoading, hasCustomerAccess, customerId, userRole, logout } = useCloudflareAuth();
+  const { user, isLoading: authLoading, isAuthenticated, hasCustomerAccess, customerId, userRole, logout } = useCloudflareAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [folders, setFolders] = useState<DocumentFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
-  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, { progress: number; status: 'uploading' | 'done' | 'error'; error?: string }>>({});
   const [showUpload, setShowUpload] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [uploadDescription, setUploadDescription] = useState('');
+  const [uploadTags, setUploadTags] = useState('');
+  const [uploadConfidential, setUploadConfidential] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalDocs, setTotalDocs] = useState(0);
+  const PAGE_SIZE = 25;
+
+  // Filter panel
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterConfidential, setFilterConfidential] = useState(false);
+
+  const showNotification = useCallback((type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
+  }, []);
+
+  // Check if running in dev mode
+  const isDev = import.meta.env.DEV;
 
   // Load documents and folders
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        console.log('CustomerPortal: Starting data load...');
-        
-        // Use customerId if available, otherwise use demo customer for development
-        const customerIdToUse = customerId || 'demo-customer-001';
-        console.log('CustomerPortal: Using customer ID:', customerIdToUse);
-        
-        // Add timeout to prevent infinite loading
-        const timeout = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Load timeout')), 5000)
-        );
-        
-        const dataPromise = Promise.all([
-          documentService.getDocuments({ customerId: customerIdToUse }),
-          documentService.getFolders(customerIdToUse)
+
+        const customerIdToUse = customerId || undefined;
+
+        const [docsResult, foldersData] = await Promise.all([
+          documentApi.getDocuments({
+            customerId: customerIdToUse,
+            folderId: selectedFolder,
+            search: searchTerm || undefined,
+            confidentialOnly: filterConfidential || undefined,
+            page,
+            limit: PAGE_SIZE,
+          }),
+          folderApi.getFolders(customerIdToUse),
         ]);
-        
-        const [docsData, foldersData] = await Promise.race([dataPromise, timeout]) as [any[], any[]];
-        
-        console.log('CustomerPortal: Loaded documents:', docsData.length);
-        console.log('CustomerPortal: Loaded folders:', foldersData.length);
-        
-        setDocuments(docsData);
+
+        setDocuments(docsResult.documents);
+        setTotalPages(docsResult.pagination.totalPages);
+        setTotalDocs(docsResult.pagination.total);
         setFolders(foldersData);
       } catch (error) {
-        console.error('CustomerPortal: Failed to load data:', error);
-        // Set empty arrays instead of hanging
+        console.error('Failed to load data:', error);
         setDocuments([]);
         setFolders([]);
-        onError?.('Failed to load documents and folders');
+
+        if (error instanceof ApiError && error.status === 401) {
+          showNotification('error', 'Session expired. Please log in again.');
+        } else {
+          onError?.('Failed to load documents');
+        }
       } finally {
-        console.log('CustomerPortal: Data load complete, setting isLoading to false');
         setIsLoading(false);
       }
     };
 
-    // Load data when auth loading is complete, regardless of customerId
     if (!authLoading) {
-      console.log('CustomerPortal: Auth loading complete, starting data load');
       loadData();
     }
-  }, [authLoading, customerId, onError]);
+  }, [authLoading, customerId, selectedFolder, searchTerm, filterConfidential, page, onError, showNotification]);
 
-  // Filter documents based on search and folder
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = !searchTerm || 
-      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesFolder = !selectedFolder || doc.folderId === selectedFolder;
-    
-    return matchesSearch && matchesFolder;
-  });
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, selectedFolder, filterConfidential]);
 
   // Handle file upload
   const handleFileUpload = async (files: FileList) => {
-    // Allow upload in demo mode
-    const customerIdToUse = customerId || 'demo-customer-001';
-    const userToUse = user || { id: 'demo-user', email: 'demo@example.com', name: 'Demo User' };
+    const customerIdToUse = customerId;
+    if (!customerIdToUse) {
+      showNotification('error', 'Customer ID not available');
+      return;
+    }
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const uploadId = `${file.name}-${Date.now()}`;
-      
+
+      // Client-side validation
+      const validation = validateDocumentUpload(file);
+      if (!validation.isValid) {
+        showNotification('error', `${file.name}: ${validation.error}`);
+        continue;
+      }
+
       try {
-        setUploadProgress(prev => ({ ...prev, [uploadId]: 0 }));
-        
-        const uploadRequest: DocumentUploadRequest = {
+        setUploadProgress(prev => ({ ...prev, [uploadId]: { progress: 50, status: 'uploading' } }));
+
+        const newDoc = await documentApi.uploadDocument({
           file,
           customerId: customerIdToUse,
           folderId: selectedFolder,
-          description: `Uploaded by ${userToUse.name || userToUse.email}`,
-          tags: ['customer-upload'],
-          isConfidential: false
-        };
+          description: uploadDescription || `Uploaded by ${user?.name || user?.email}`,
+          tags: uploadTags ? uploadTags.split(',').map(t => t.trim()).filter(Boolean) : ['customer-upload'],
+          isConfidential: uploadConfidential,
+        });
 
-        // Simulate upload progress
-        const progressInterval = setInterval(() => {
-          setUploadProgress(prev => ({
-            ...prev,
-            [uploadId]: Math.min((prev[uploadId] || 0) + Math.random() * 30, 90)
-          }));
-        }, 500);
-
-        const newDoc = await documentService.uploadDocument(uploadRequest, userToUse.id);
-        
-        clearInterval(progressInterval);
-        setUploadProgress(prev => ({ ...prev, [uploadId]: 100 }));
-        
-        // Update documents list
+        setUploadProgress(prev => ({ ...prev, [uploadId]: { progress: 100, status: 'done' } }));
         setDocuments(prev => [newDoc, ...prev]);
-        
-        // Remove progress after a delay
+        showNotification('success', `${file.name} uploaded successfully`);
+
         setTimeout(() => {
           setUploadProgress(prev => {
             const updated = { ...prev };
@@ -138,76 +150,73 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
             return updated;
           });
         }, 2000);
-        
       } catch (error) {
-        console.error('Upload failed:', error);
-        onError?.(`Upload failed for ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        setUploadProgress(prev => {
-          const updated = { ...prev };
-          delete updated[uploadId];
-          return updated;
-        });
+        const message = error instanceof ApiError ? error.message : 'Upload failed';
+        setUploadProgress(prev => ({ ...prev, [uploadId]: { progress: 0, status: 'error', error: message } }));
+        showNotification('error', `${file.name}: ${message}`);
+
+        setTimeout(() => {
+          setUploadProgress(prev => {
+            const updated = { ...prev };
+            delete updated[uploadId];
+            return updated;
+          });
+        }, 5000);
       }
     }
-    
+
     setSelectedFiles(null);
     setShowUpload(false);
+    setUploadDescription('');
+    setUploadTags('');
+    setUploadConfidential(false);
   };
 
   // Handle document download
-  const handleDownload = async (document: Document, version?: number) => {
-    // Allow download in demo mode
-    const userToUse = user || { id: 'demo-user', email: 'demo@example.com', name: 'Demo User' };
-    
+  const handleDownload = async (doc: Document) => {
     try {
-      const downloadUrl = await documentService.downloadDocument({
-        documentId: document.id,
-        version,
-        userId: userToUse.id
-      });
-      
-      if (downloadUrl) {
-        // Check if it's a mock URL (demo mode)
-        if (downloadUrl.includes('mock-r2-url.com')) {
-          // In demo mode, create a fake download with document content
-          const blob = new Blob([`This is a demo document: ${document.name}\n\nIn production, this would be the actual file content.`], {
-            type: 'text/plain'
-          });
-          const mockUrl = URL.createObjectURL(blob);
-          
-          const link = globalThis.document.createElement('a');
-          link.href = mockUrl;
-          link.download = document.name;
-          globalThis.document.body.appendChild(link);
-          link.click();
-          globalThis.document.body.removeChild(link);
-          
-          // Clean up the blob URL
-          setTimeout(() => URL.revokeObjectURL(mockUrl), 100);
-        } else {
-          // Production download
-          const link = globalThis.document.createElement('a');
-          link.href = downloadUrl;
-          link.download = document.name;
-          globalThis.document.body.appendChild(link);
-          link.click();
-          globalThis.document.body.removeChild(link);
-        }
-      } else {
-        onError?.('Download URL not available');
-      }
+      const { blob, fileName } = await documentApi.downloadDocument(doc.id);
+      const url = URL.createObjectURL(blob);
+      const link = globalThis.document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      globalThis.document.body.appendChild(link);
+      link.click();
+      globalThis.document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (error) {
-      console.error('Download failed:', error);
-      onError?.(`Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const message = error instanceof ApiError ? error.message : 'Download failed';
+      showNotification('error', message);
     }
   };
 
-  // Handle document view (same as download for now)
-  const handleView = async (document: Document, version?: number) => {
-    await handleDownload(document, version);
+  // Handle document view (open in new tab for PDFs/images)
+  const handleView = async (doc: Document) => {
+    try {
+      const { blob, fileName } = await documentApi.downloadDocument(doc.id);
+      const url = URL.createObjectURL(blob);
+
+      // For PDFs and images, open in new tab
+      const viewableTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      const currentVersion = doc.versions[doc.currentVersion];
+      if (currentVersion && viewableTypes.includes(currentVersion.mimeType)) {
+        window.open(url, '_blank');
+      } else {
+        // Fallback to download for non-viewable types
+        const link = globalThis.document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        globalThis.document.body.appendChild(link);
+        link.click();
+        globalThis.document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      }
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : 'View failed';
+      showNotification('error', message);
+    }
   };
 
-  // Format file size
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -216,18 +225,16 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Format date
   const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
-  // Show loading only for auth, not for data
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -239,11 +246,27 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
     );
   }
 
-  // Allow access in demo mode (when customerId is null) or when user has proper permissions
-  const isDemoMode = !customerId;
+  // In production, require authentication. In dev, allow access for testing.
   const hasProperAccess = hasCustomerAccess || userRole === 'admin' || userRole === 'staff';
-  
-  if (!isDemoMode && !hasProperAccess) {
+  if (!isDev && !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Authentication Required</h2>
+          <p className="text-gray-600">Please log in to access the customer portal.</p>
+          <button
+            onClick={() => window.location.href = '/admin/login'}
+            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Log In
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated && !hasProperAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -258,6 +281,20 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Toast notification */}
+      {notification && (
+        <div className={cn(
+          "fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-sm font-medium transition-all",
+          notification.type === 'success' ? "bg-green-50 text-green-800 border border-green-200" : "bg-red-50 text-red-800 border border-red-200"
+        )}>
+          {notification.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {notification.message}
+          <button onClick={() => setNotification(null)} className="ml-2">
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -270,8 +307,13 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
             </div>
             <div className="flex items-center space-x-4">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {userRole === 'customer' ? 'Customer' : userRole === 'admin' ? 'Administrator' : 'Staff'}
+                {userRole === 'customer' ? 'Customer' : userRole === 'admin' ? 'Administrator' : userRole === 'staff' ? 'Staff' : 'User'}
               </span>
+              {isDev && !isAuthenticated && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  Dev Mode
+                </span>
+              )}
               {user && (
                 <button
                   onClick={logout}
@@ -292,8 +334,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-              
-              {(userRole === 'customer' || userRole === 'admin' || userRole === 'staff' || isDemoMode) && (
+
+              {(userRole === 'customer' || userRole === 'admin' || userRole === 'staff') && (
                 <button
                   onClick={() => setShowUpload(true)}
                   className="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mb-4"
@@ -311,8 +353,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
                     onClick={() => setSelectedFolder(undefined)}
                     className={cn(
                       "w-full flex items-center px-3 py-2 text-sm rounded-md",
-                      !selectedFolder 
-                        ? "bg-blue-100 text-blue-700" 
+                      !selectedFolder
+                        ? "bg-blue-100 text-blue-700"
                         : "text-gray-600 hover:bg-gray-100"
                     )}
                   >
@@ -325,8 +367,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
                       onClick={() => setSelectedFolder(folder.id)}
                       className={cn(
                         "w-full flex items-center px-3 py-2 text-sm rounded-md",
-                        selectedFolder === folder.id 
-                          ? "bg-blue-100 text-blue-700" 
+                        selectedFolder === folder.id
+                          ? "bg-blue-100 text-blue-700"
                           : "text-gray-600 hover:bg-gray-100"
                       )}
                     >
@@ -340,20 +382,29 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
               {/* Upload Progress */}
               {Object.keys(uploadProgress).length > 0 && (
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Uploading</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Uploads</h4>
                   <div className="space-y-2">
-                    {Object.entries(uploadProgress).map(([uploadId, progress]) => (
+                    {Object.entries(uploadProgress).map(([uploadId, { progress, status, error }]) => (
                       <div key={uploadId} className="text-xs">
                         <div className="flex justify-between items-center mb-1">
-                          <span className="text-gray-600">{uploadId.split('-')[0]}</span>
-                          <span className="text-gray-500">{Math.round(progress)}%</span>
+                          <span className="text-gray-600 truncate max-w-[120px]">{uploadId.split('-')[0]}</span>
+                          <span className={cn(
+                            "text-xs",
+                            status === 'done' ? "text-green-600" : status === 'error' ? "text-red-600" : "text-gray-500"
+                          )}>
+                            {status === 'done' ? 'Done' : status === 'error' ? 'Failed' : `${Math.round(progress)}%`}
+                          </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div 
-                            className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                          <div
+                            className={cn(
+                              "h-1.5 rounded-full transition-all duration-300",
+                              status === 'done' ? "bg-green-500" : status === 'error' ? "bg-red-500" : "bg-blue-600"
+                            )}
                             style={{ width: `${progress}%` }}
                           />
                         </div>
+                        {error && <p className="text-red-500 mt-1">{error}</p>}
                       </div>
                     ))}
                   </div>
@@ -371,37 +422,59 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="text"
-                    placeholder="Search documents..."
+                    placeholder="Search documents by name, description, or tags..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
-                <button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={cn(
+                    "inline-flex items-center px-4 py-2 border rounded-md text-sm font-medium",
+                    showFilters
+                      ? "border-blue-500 text-blue-700 bg-blue-50"
+                      : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                  )}
+                >
                   <Filter className="w-4 h-4 mr-2" />
                   Filters
                 </button>
               </div>
+
+              {/* Filter Panel */}
+              {showFilters && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={filterConfidential}
+                        onChange={(e) => setFilterConfidential(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      Confidential only
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Documents List */}
             <div className="bg-white rounded-lg shadow-sm">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-medium text-gray-900">
-                  Documents ({filteredDocuments.length})
+                  Documents ({totalDocs})
                 </h3>
               </div>
-              
+
               <div className="divide-y divide-gray-200">
                 {isLoading ? (
                   <div className="px-6 py-12 text-center">
                     <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
                     <p className="text-gray-600">Loading documents...</p>
-                    {!customerId && (
-                      <p className="text-sm text-blue-600 mt-2">Demo mode - Cloudflare Access not configured</p>
-                    )}
                   </div>
-                ) : filteredDocuments.length === 0 ? (
+                ) : documents.length === 0 ? (
                   <div className="px-6 py-12 text-center">
                     <File className="mx-auto h-12 w-12 text-gray-400" />
                     <h3 className="mt-2 text-sm font-medium text-gray-900">No documents</h3>
@@ -410,7 +483,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
                     </p>
                   </div>
                 ) : (
-                  filteredDocuments.map((document) => {
+                  documents.map((document) => {
                     const currentVersion = document.versions[document.currentVersion];
                     return (
                       <div key={document.id} className="px-6 py-4 hover:bg-gray-50">
@@ -431,7 +504,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
                                     )}
                                   </div>
                                 </div>
-                                
+
                                 <div className="mt-2 flex items-center text-xs text-gray-500 space-x-4">
                                   <span className="flex items-center">
                                     <Clock className="w-3 h-3 mr-1" />
@@ -460,21 +533,21 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
                                   </div>
                                 )}
                               </div>
-                              
+
                               <div className="ml-4 flex items-center space-x-2">
+                                <button
+                                  onClick={() => handleView(document)}
+                                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                                >
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  View
+                                </button>
                                 <button
                                   onClick={() => handleDownload(document)}
                                   className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
                                 >
                                   <Download className="w-3 h-3 mr-1" />
                                   Download
-                                </button>
-                                <button 
-                                  onClick={() => handleView(document)}
-                                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
-                                >
-                                  <Eye className="w-3 h-3 mr-1" />
-                                  View
                                 </button>
                               </div>
                             </div>
@@ -485,6 +558,31 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
                   })
                 )}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                  <p className="text-sm text-gray-500">
+                    Page {page} of {totalPages} ({totalDocs} documents)
+                  </p>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm rounded text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm rounded text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -493,27 +591,73 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
       {/* Upload Modal */}
       {showUpload && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="relative top-20 mx-auto p-5 border w-[28rem] shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Upload Documents</h3>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Files
-                </label>
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e) => setSelectedFiles(e.target.files)}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Upload Documents</h3>
+                <button onClick={() => { setShowUpload(false); setSelectedFiles(null); }}>
+                  <X className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+                </button>
               </div>
 
-              <div className="flex justify-end space-x-3">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Files
+                  </label>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.docx,.xlsx,.pptx,.txt,.csv"
+                    onChange={(e) => setSelectedFiles(e.target.files)}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Max 100MB. PDF, images, Office docs, text files.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <input
+                    type="text"
+                    value={uploadDescription}
+                    onChange={(e) => setUploadDescription(e.target.value)}
+                    placeholder="Brief description of the document"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma-separated)</label>
+                  <input
+                    type="text"
+                    value={uploadTags}
+                    onChange={(e) => setUploadTags(e.target.value)}
+                    placeholder="e.g. report, quarterly, finance"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={uploadConfidential}
+                    onChange={(e) => setUploadConfidential(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  Mark as confidential
+                </label>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
                 <button
                   onClick={() => {
                     setShowUpload(false);
                     setSelectedFiles(null);
+                    setUploadDescription('');
+                    setUploadTags('');
+                    setUploadConfidential(false);
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >

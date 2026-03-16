@@ -404,39 +404,58 @@ export function useCloudflareAuth() {
           setHasCustomerAccess(hasCustomer);
           setUserRole(role);
           setCustomerId(customerIdValue);
-        } else {
-          // Demo mode - set default customer role
-          console.log('Demo mode: No Cloudflare Access authentication detected');
+        } else if (import.meta.env.DEV) {
+          // Demo mode - ONLY available in development builds
+          console.log('Dev mode: No Cloudflare Access authentication detected');
           const demoUser = {
             id: 'demo-customer-001',
             email: 'demo@customer.com',
             name: 'Demo Customer'
           };
-          
+
           setUser(demoUser);
           setIsAuthenticated(false); // Not truly authenticated
           setHasAdminAccess(false);
           setHasStaffAccess(false);
-          setHasCustomerAccess(true); // Demo user is customer
-          setUserRole('customer'); // Always customer in demo mode
-          setCustomerId(null); // No customer ID in demo mode
+          setHasCustomerAccess(true);
+          setUserRole('customer');
+          setCustomerId(null);
+        } else {
+          // Production with no auth - user is not authenticated
+          setUser(null);
+          setIsAuthenticated(false);
+          setHasAdminAccess(false);
+          setHasStaffAccess(false);
+          setHasCustomerAccess(false);
+          setUserRole(null);
+          setCustomerId(null);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        // Fallback to demo mode
-        const demoUser = {
-          id: 'demo-customer-001',
-          email: 'demo@customer.com',
-          name: 'Demo Customer'
-        };
-        
-        setUser(demoUser);
-        setIsAuthenticated(false);
-        setHasAdminAccess(false);
-        setHasStaffAccess(false);
-        setHasCustomerAccess(true);
-        setUserRole('customer');
-        setCustomerId(null);
+        if (import.meta.env.DEV) {
+          // Fallback to demo mode only in development
+          const demoUser = {
+            id: 'demo-customer-001',
+            email: 'demo@customer.com',
+            name: 'Demo Customer'
+          };
+          setUser(demoUser);
+          setIsAuthenticated(false);
+          setHasAdminAccess(false);
+          setHasStaffAccess(false);
+          setHasCustomerAccess(true);
+          setUserRole('customer');
+          setCustomerId(null);
+        } else {
+          // Production - auth failed, user is not authenticated
+          setUser(null);
+          setIsAuthenticated(false);
+          setHasAdminAccess(false);
+          setHasStaffAccess(false);
+          setHasCustomerAccess(false);
+          setUserRole(null);
+          setCustomerId(null);
+        }
       } finally {
         setIsLoading(false);
       }
