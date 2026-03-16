@@ -13,6 +13,7 @@ const BlogPost = React.lazy(() => import("./components/BlogPost").then(m => ({ d
 const GisServices = React.lazy(() => import("./components/GisServices").then(m => ({ default: m.GisServices })));
 const CustomerPortal = React.lazy(() => import("./components/CustomerPortal").then(m => ({ default: m.CustomerPortal })));
 const AdminLayout = React.lazy(() => import("./components/AdminRouter").then(m => ({ default: m.AdminLayout })));
+const NotFound = React.lazy(() => import("./components/NotFound").then(m => ({ default: m.NotFound })));
 
 function PageLoader() {
   return (
@@ -75,6 +76,9 @@ export function AppRouter() {
 
             {/* Admin routes with Cloudflare Access authentication */}
             <Route path="/admin/*" element={<AdminLayout />} />
+
+            {/* 404 catch-all */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

@@ -24,7 +24,7 @@ export function Services() {
     title: 'Advisory & Support',
     description: 'Business planning, governance training, and UK expansion guidance tailored to your unique needs and growth objectives.'
   }];
-  return <section id="services" className="py-24 bg-white">
+  return <section id="services" className="py-24 bg-white dark:bg-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div ref={ref} initial={{
         opacity: 0,
@@ -35,10 +35,10 @@ export function Services() {
       } : {}} transition={{
         duration: 0.8
       }} className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-serif text-gray-900 mb-4">
-            Our <span className="text-yellow-600">Services</span>
+          <h2 className="text-4xl md:text-5xl font-serif text-gray-900 dark:text-white mb-4">
+            Our <span className="text-yellow-600 dark:text-yellow-500">Services</span>
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             Comprehensive solutions designed to support your business at every
             stage of growth
           </p>
@@ -55,14 +55,14 @@ export function Services() {
           } : {}} transition={{
             duration: 0.8,
             delay: index * 0.1
-          }} className="bg-gray-50 p-8 rounded-lg hover:shadow-xl transition-all duration-300 group hover:-translate-y-2">
-                <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mb-6 group-hover:bg-yellow-500 transition-colors duration-300">
-                  <Icon className="text-yellow-600 group-hover:text-white transition-colors duration-300" size={32} />
+          }} className="bg-gray-50 dark:bg-gray-700 p-8 rounded-lg hover:shadow-xl transition-all duration-300 group hover:-translate-y-2">
+                <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center mb-6 group-hover:bg-yellow-500 transition-colors duration-300">
+                  <Icon className="text-yellow-600 dark:text-yellow-500 group-hover:text-white transition-colors duration-300" size={32} />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   {service.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                   {service.description}
                 </p>
               </motion.div>;

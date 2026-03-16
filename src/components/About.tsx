@@ -6,7 +6,7 @@ export function About() {
     triggerOnce: true,
     threshold: 0.2
   });
-  return <section id="about" className="py-24 bg-gray-50 relative overflow-hidden">
+  return <section id="about" className="py-24 bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -24,22 +24,22 @@ export function About() {
       } : {}} transition={{
         duration: 0.8
       }}>
-          <h2 className="text-4xl md:text-5xl font-serif text-gray-900 mb-8">
+          <h2 className="text-4xl md:text-5xl font-serif text-gray-900 dark:text-white mb-8">
             About <span className="text-yellow-600">Mustardtree Partners</span>
           </h2>
-          <p className="text-lg md:text-xl text-gray-700 leading-relaxed mb-6">
+          <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
             Mustardtree Partners Ltd is a UK-based corporate governance and
             business intelligence firm committed to helping organisations
             navigate complexity with clarity and confidence. We provide expert
             guidance in company secretarial services, strategic intelligence,
             and data-driven decision-making.
           </p>
-          <p className="text-lg md:text-xl text-gray-700 leading-relaxed mb-6">
+          <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
             Our mission is to empower businesses to establish robust governance
             frameworks, unlock actionable insights, and achieve sustainable
             growth through integrity, transparency, and partnership.
           </p>
-          <p className="text-lg md:text-xl text-gray-700 leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
             Whether you are starting a new venture, expanding into the UK
             market, or seeking to strengthen your corporate governance, we are
             here to support you every step of the way.

@@ -29,7 +29,7 @@ export function Contact() {
       [e.target.name]: e.target.value
     });
   };
-  return <section id="contact" className="py-24 bg-white">
+  return <section id="contact" className="py-24 bg-white dark:bg-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div ref={ref} initial={{
         opacity: 0,
@@ -40,10 +40,10 @@ export function Contact() {
       } : {}} transition={{
         duration: 0.8
       }} className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-serif text-gray-900 mb-4">
-            Get in <span className="text-yellow-600">Touch</span>
+          <h2 className="text-4xl md:text-5xl font-serif text-gray-900 dark:text-white mb-4">
+            Get in <span className="text-yellow-600 dark:text-yellow-500">Touch</span>
           </h2>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-gray-600 dark:text-gray-400">
             Ready to transform your business? Let's start a conversation.
           </p>
         </motion.div>
@@ -61,22 +61,22 @@ export function Contact() {
         }}>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Name
                 </label>
-                <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} required className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all" />
+                <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} required className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all" />
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email
                 </label>
-                <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all" />
+                <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all" />
               </div>
               <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Message
                 </label>
-                <textarea id="message" name="message" value={formData.message} onChange={handleChange} required rows={6} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all resize-none" />
+                <textarea id="message" name="message" value={formData.message} onChange={handleChange} required rows={6} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all resize-none" />
               </div>
               <button type="submit" className="w-full px-8 py-4 bg-yellow-500 text-gray-900 rounded-lg font-semibold hover:bg-yellow-400 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
                 Send Message
@@ -95,13 +95,13 @@ export function Contact() {
           duration: 0.8,
           delay: 0.4
         }} className="space-y-8">
-            <div className="bg-gray-50 p-8 rounded-lg">
+            <div className="bg-gray-50 dark:bg-gray-700 p-8 rounded-lg">
               <div className="flex items-start gap-4 mb-6">
                 <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
                   <MapPin className="text-yellow-600" size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                     Registered Address
                   </h3>
                   <p className="text-gray-600">
@@ -118,18 +118,18 @@ export function Contact() {
                   <Mail className="text-yellow-600" size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                     Email
                   </h3>
                   <p className="text-gray-600">info@mustardtreegroup.com</p>
                 </div>
               </div>
             </div>
-            <div className="bg-gray-50 p-8 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-gray-50 dark:bg-gray-700 p-8 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Company Information
               </h3>
-              <div className="space-y-2 text-gray-600">
+              <div className="space-y-2 text-gray-600 dark:text-gray-300">
                 <p>
                   <span className="font-medium">Company Name:</span> Mustardtree
                   Partners Ltd
