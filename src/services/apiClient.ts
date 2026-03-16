@@ -85,6 +85,7 @@ export const documentApi = {
     if (filters?.folderId) params.set('folderId', filters.folderId);
     if (filters?.search) params.set('search', filters.search);
     if (filters?.confidentialOnly) params.set('confidentialOnly', 'true');
+    if (filters?.fileTypes?.length) params.set('fileTypes', filters.fileTypes.join(','));
     if (filters?.page) params.set('page', String(filters.page));
     if (filters?.limit) params.set('limit', String(filters.limit));
 
@@ -168,6 +169,52 @@ export const folderApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  async renameFolder(folderId: string, name: string): Promise<DocumentFolder> {
+    return apiFetch<DocumentFolder>(`/api/folders/${folderId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name }),
+    });
+  },
+
+  async deleteFolder(folderId: string): Promise<void> {
+    await apiFetch(`/api/folders/${folderId}`, { method: 'DELETE' });
+  },
+};
+
+// ----- Stats API -----
+
+export interface PortalStats {
+  totalDocuments: number;
+  totalStorageBytes: number;
+  recentActivityCount: number;
+  totalFolders: number;
+}
+
+export const statsApi = {
+  async getStats(customerId?: string): Promise<PortalStats> {
+    const params = customerId ? `?customerId=${customerId}` : '';
+    return apiFetch<PortalStats>(`/api/stats${params}`);
+  },
+};
+
+// ----- Activity API -----
+
+export interface ActivityEntry {
+  userId: string;
+  userEmail?: string;
+  action: string;
+  details?: string;
+  timestamp: string;
+}
+
+export const activityApi = {
+  async getDocumentActivity(documentId: string, limit = 20): Promise<ActivityEntry[]> {
+    const result = await apiFetch<{ activity: ActivityEntry[] }>(
+      `/api/documents/${documentId}/activity?limit=${limit}`
+    );
+    return result.activity;
   },
 };
 

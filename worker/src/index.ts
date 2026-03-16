@@ -316,6 +316,7 @@ async function handleGetDocuments(request: Request, env: Env, user: AuthUser): P
   const folderId = url.searchParams.get('folderId');
   const search = url.searchParams.get('search');
   const confidentialOnly = url.searchParams.get('confidentialOnly') === 'true';
+  const fileTypes = url.searchParams.get('fileTypes');
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
   const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '25')));
   const offset = (page - 1) * limit;
@@ -348,6 +349,12 @@ async function handleGetDocuments(request: Request, env: Env, user: AuthUser): P
   if (confidentialOnly) {
     query += ' AND d.is_confidential = 1';
   }
+  if (fileTypes) {
+    const types = fileTypes.split(',').map(t => t.trim());
+    const typeClauses = types.map(() => 'dv.mime_type LIKE ?');
+    query += ` AND (${typeClauses.join(' OR ')})`;
+    types.forEach(t => params.push(`%${t}%`));
+  }
 
   query += ' GROUP BY d.id ORDER BY d.updated_at DESC LIMIT ? OFFSET ?';
   params.push(limit, offset);
@@ -373,6 +380,11 @@ async function handleGetDocuments(request: Request, env: Env, user: AuthUser): P
   }
   if (confidentialOnly) {
     countQuery += ' AND is_confidential = 1';
+  }
+  if (fileTypes) {
+    const types = fileTypes.split(',').map(t => t.trim());
+    countQuery += ` AND id IN (SELECT document_id FROM document_versions WHERE ${types.map(() => 'mime_type LIKE ?').join(' OR ')})`;
+    types.forEach(t => countParams.push(`%${t}%`));
   }
 
   const countResult = await env.DB.prepare(countQuery).bind(...countParams).first<{ total: number }>();
@@ -795,6 +807,107 @@ async function handleGetAuditLog(request: Request, env: Env, user: AuthUser): Pr
   return jsonResponse({ logs });
 }
 
+// GET /api/stats?customerId=
+async function handleGetStats(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  const url = new URL(request.url);
+  let customerId = url.searchParams.get('customerId');
+
+  if (user.role === 'customer') {
+    customerId = user.customerId;
+  }
+
+  const conditions = customerId ? ' WHERE customer_id = ?' : '';
+  const params = customerId ? [customerId] : [];
+
+  const [docCount, totalSize, recentActivity, folderCount] = await Promise.all([
+    env.DB.prepare(`SELECT COUNT(*) as count FROM documents${conditions}`).bind(...params).first<{ count: number }>(),
+    env.DB.prepare(`SELECT COALESCE(SUM(dv.file_size), 0) as total FROM document_versions dv JOIN documents d ON dv.document_id = d.id${conditions.replace('customer_id', 'd.customer_id')}`).bind(...params).first<{ total: number }>(),
+    env.DB.prepare(`SELECT COUNT(*) as count FROM access_log WHERE timestamp > datetime('now', '-7 days')${customerId ? ' AND document_id IN (SELECT id FROM documents WHERE customer_id = ?)' : ''}`).bind(...params).first<{ count: number }>(),
+    env.DB.prepare(`SELECT COUNT(*) as count FROM folders${conditions.replace('customer_id', 'customer_id')}`).bind(...params).first<{ count: number }>(),
+  ]);
+
+  return jsonResponse({
+    totalDocuments: docCount?.count || 0,
+    totalStorageBytes: totalSize?.total || 0,
+    recentActivityCount: recentActivity?.count || 0,
+    totalFolders: folderCount?.count || 0,
+  });
+}
+
+// DELETE /api/folders/:id
+async function handleDeleteFolder(request: Request, env: Env, user: AuthUser, folderId: string): Promise<Response> {
+  const folder = await env.DB.prepare('SELECT * FROM folders WHERE id = ?').bind(folderId).first();
+  if (!folder) return jsonResponse({ error: 'Folder not found' }, 404);
+
+  if (!(await canAccessCustomerDocuments(user, folder.customer_id as string))) {
+    return jsonResponse({ error: 'Access denied' }, 403);
+  }
+
+  // Move documents in this folder to no folder
+  await env.DB.prepare('UPDATE documents SET folder_id = NULL, updated_at = ? WHERE folder_id = ?')
+    .bind(new Date().toISOString(), folderId).run();
+
+  // Move child folders to no parent
+  await env.DB.prepare('UPDATE folders SET parent_folder_id = NULL, updated_at = ? WHERE parent_folder_id = ?')
+    .bind(new Date().toISOString(), folderId).run();
+
+  await env.DB.prepare('DELETE FROM folders WHERE id = ?').bind(folderId).run();
+
+  return jsonResponse({ success: true });
+}
+
+// PUT /api/folders/:id
+async function handleUpdateFolder(request: Request, env: Env, user: AuthUser, folderId: string): Promise<Response> {
+  const folder = await env.DB.prepare('SELECT * FROM folders WHERE id = ?').bind(folderId).first();
+  if (!folder) return jsonResponse({ error: 'Folder not found' }, 404);
+
+  if (!(await canAccessCustomerDocuments(user, folder.customer_id as string))) {
+    return jsonResponse({ error: 'Access denied' }, 403);
+  }
+
+  const body = await request.json<{ name?: string }>();
+  if (!body.name) return jsonResponse({ error: 'Name required' }, 400);
+
+  const now = new Date().toISOString();
+  await env.DB.prepare('UPDATE folders SET name = ?, updated_at = ? WHERE id = ?')
+    .bind(sanitize(body.name), now, folderId).run();
+
+  return jsonResponse({
+    id: folderId,
+    name: body.name,
+    customerId: folder.customer_id,
+    parentFolderId: folder.parent_folder_id,
+    createdBy: folder.created_by,
+    createdAt: folder.created_at,
+    updatedAt: now,
+  });
+}
+
+// GET /api/documents/:id/activity
+async function handleGetDocumentActivity(request: Request, env: Env, user: AuthUser, documentId: string): Promise<Response> {
+  // Check permission
+  if (!(await canAccessDocument(env.DB, documentId, user, 'view'))) {
+    return jsonResponse({ error: 'Access denied' }, 403);
+  }
+
+  const url = new URL(request.url);
+  const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit') || '20')));
+
+  const results = await env.DB.prepare(
+    'SELECT * FROM access_log WHERE document_id = ? ORDER BY timestamp DESC LIMIT ?'
+  ).bind(documentId, limit).all();
+
+  const activity = (results.results || []).map((row: Record<string, unknown>) => ({
+    userId: row.user_id,
+    userEmail: row.user_email,
+    action: row.action,
+    details: row.details,
+    timestamp: row.timestamp,
+  }));
+
+  return jsonResponse({ activity });
+}
+
 // GET /api/auth/me
 async function handleGetMe(user: AuthUser): Promise<Response> {
   return jsonResponse({
@@ -848,10 +961,21 @@ export default {
       } else if (path.match(/^\/api\/documents\/[^/]+$/) && request.method === 'DELETE') {
         const docId = path.split('/')[3];
         response = await handleDeleteDocument(request, env, user, docId);
+      } else if (path.match(/^\/api\/documents\/[^/]+\/activity$/) && request.method === 'GET') {
+        const docId = path.split('/')[3];
+        response = await handleGetDocumentActivity(request, env, user, docId);
+      } else if (path === '/api/stats' && request.method === 'GET') {
+        response = await handleGetStats(request, env, user);
       } else if (path === '/api/folders' && request.method === 'GET') {
         response = await handleGetFolders(request, env, user);
       } else if (path === '/api/folders' && request.method === 'POST') {
         response = await handleCreateFolder(request, env, user);
+      } else if (path.match(/^\/api\/folders\/[^/]+$/) && request.method === 'PUT') {
+        const fId = path.split('/')[3];
+        response = await handleUpdateFolder(request, env, user, fId);
+      } else if (path.match(/^\/api\/folders\/[^/]+$/) && request.method === 'DELETE') {
+        const fId = path.split('/')[3];
+        response = await handleDeleteFolder(request, env, user, fId);
       } else if (path === '/api/customers' && request.method === 'GET') {
         response = await handleGetCustomers(request, env, user);
       } else if (path === '/api/customers' && request.method === 'POST') {
