@@ -45,7 +45,7 @@ export class CloudflareAccessService {
     // Production configuration for Cloudflare Access
     return {
       domain: 'mustardtreegroup.com', // Main domain with SELF-HOSTED Access
-      applicationAUD: '2ab81f6bcbd116922eb63640376f7c539fc5d773b453d019edd8360fb3413a30',
+      applicationAUD: 'dc7b2388aeffd10f16fa1d209985b0ce28e95a5a2775c1e61d6be85b187e39eb',
       certsUrl: undefined
     };
   }
