@@ -304,4 +304,72 @@ export const analyticsApi = {
   },
 };
 
+// ----- Blog API -----
+
+import type { BlogPost, Author } from '../types/blog';
+
+export const blogApi = {
+  async getPosts(status?: string): Promise<BlogPost[]> {
+    const params = status ? `?status=${status}` : '';
+    const result = await apiFetch<{ posts: BlogPost[] }>(`/api/blog/posts${params}`);
+    return result.posts;
+  },
+
+  async getPostBySlug(slug: string): Promise<BlogPost | null> {
+    try {
+      const result = await apiFetch<{ post: BlogPost }>(`/api/blog/posts/${slug}`);
+      return result.post;
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    }
+  },
+
+  async createPost(data: Record<string, unknown>): Promise<BlogPost> {
+    const result = await apiFetch<{ post: BlogPost }>('/api/blog/posts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return result.post;
+  },
+
+  async updatePost(id: string, data: Record<string, unknown>): Promise<BlogPost> {
+    const result = await apiFetch<{ post: BlogPost }>(`/api/blog/posts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return result.post;
+  },
+
+  async deletePost(id: string): Promise<void> {
+    await apiFetch(`/api/blog/posts/${id}`, { method: 'DELETE' });
+  },
+
+  async getAuthors(): Promise<Author[]> {
+    const result = await apiFetch<{ authors: Author[] }>('/api/blog/authors');
+    return result.authors;
+  },
+
+  async createAuthor(data: Record<string, unknown>): Promise<Author> {
+    const result = await apiFetch<{ author: Author }>('/api/blog/authors', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return result.author;
+  },
+};
+
+// ----- Notification API -----
+
+export const notificationApi = {
+  async send(data: { type: string; recipientEmail: string; subject: string; body: string }): Promise<void> {
+    await apiFetch('/api/notifications/send', { method: 'POST', body: JSON.stringify(data) });
+  },
+
+  async list(limit = 50): Promise<Array<{ id: number; type: string; recipientEmail: string; subject: string; status: string; createdAt: string }>> {
+    const result = await apiFetch<{ notifications: Array<{ id: number; type: string; recipientEmail: string; subject: string; status: string; createdAt: string }> }>(`/api/notifications?limit=${limit}`);
+    return result.notifications;
+  },
+};
+
 export { ApiError };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, User, ArrowRight } from 'lucide-react';
-import { blogService } from '../services/blogService';
+import { blogApi } from '../services/apiClient';
 import { BlogPost } from '../types/blog';
 
 export function Blog() {
@@ -11,7 +11,7 @@ export function Blog() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const publishedPosts = await blogService.getPublishedPosts();
+        const publishedPosts = await blogApi.getPosts('published');
         setPosts(publishedPosts);
       } catch (error) {
         console.error('Error fetching posts:', error);

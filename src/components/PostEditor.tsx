@@ -10,7 +10,7 @@ import {
   Globe,
   AlertCircle
 } from 'lucide-react';
-import { blogService } from '../services/blogService';
+import { blogApi } from '../services/apiClient';
 import type { BlogPost as BlogPostType, Author } from '../types/blog';
 
 interface PostEditorProps {
@@ -45,12 +45,12 @@ export function PostEditor({ postId, onCancel, onSave }: PostEditorProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const authorsData = await blogService.getAuthors();
+        const authorsData = await blogApi.getAuthors();
         setAuthors(authorsData);
 
         if (postId) {
-          const posts = await blogService.getPosts();
-          const existingPost = posts.find(p => p.id === postId);
+          const posts = await blogApi.getPosts();
+          const existingPost = posts.find((p: { id: string }) => p.id === postId);
           if (existingPost) {
             setPost(existingPost);
           }
@@ -143,9 +143,9 @@ export function PostEditor({ postId, onCancel, onSave }: PostEditorProps) {
       };
 
       if (postId) {
-        await blogService.updatePost(postId, postData);
+        await blogApi.updatePost(postId, postData);
       } else {
-        await blogService.createPost(postData);
+        await blogApi.createPost(postData);
       }
 
       onSave(postData);

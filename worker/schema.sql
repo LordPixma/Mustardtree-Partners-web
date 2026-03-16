@@ -112,6 +112,65 @@ CREATE INDEX IF NOT EXISTS idx_access_log_user ON access_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_access_log_timestamp ON access_log(timestamp);
 CREATE INDEX IF NOT EXISTS idx_folders_customer ON folders(customer_id);
 
+-- Blog authors table
+CREATE TABLE IF NOT EXISTS authors (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  bio TEXT NOT NULL DEFAULT '',
+  email TEXT NOT NULL,
+  headshot TEXT,
+  position TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Blog posts table
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  excerpt TEXT NOT NULL DEFAULT '',
+  content TEXT NOT NULL DEFAULT '',
+  author_id TEXT NOT NULL,
+  featured_image TEXT,
+  video_url TEXT,
+  status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'published', 'archived')),
+  category TEXT,
+  tags TEXT, -- JSON array
+  reading_time INTEGER,
+  seo_title TEXT,
+  seo_description TEXT,
+  seo_keywords TEXT, -- JSON array
+  published_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (author_id) REFERENCES authors(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_author ON blog_posts(author_id);
+
+-- Notification log
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL, -- 'document_upload', 'document_shared', 'new_blog_post'
+  recipient_email TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  body TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'sent', 'failed')),
+  error TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Seed default author
+INSERT OR IGNORE INTO authors (id, name, bio, email, position)
+VALUES ('1', 'MustardTree Team', 'The expert team at MustardTree Partners, providing insights on governance, compliance, and business intelligence.', 'info@mustardtreegroup.com', 'Editorial Team');
+
+-- Seed default blog post
+INSERT OR IGNORE INTO blog_posts (id, title, slug, excerpt, content, author_id, status, category, tags, reading_time, published_at)
+VALUES ('1', 'Understanding Modern Corporate Governance', 'understanding-modern-corporate-governance', 'Explore the key principles and best practices of corporate governance.', 'Corporate governance has evolved significantly in recent years. Key principles include transparency, accountability, and fairness.', '1', 'published', 'Corporate Governance', '["Governance","Compliance","Best Practices"]', 5, '2025-01-01T00:00:00.000Z');
+
 -- Seed default customer
 INSERT OR IGNORE INTO customers (id, name, email, company, access_level, is_active)
 VALUES ('customer-1', 'Acme Corporation', 'contact@acme.com', 'Acme Corporation', 'read-write', 1);

@@ -13,7 +13,7 @@ import {
   Search,
   Filter
 } from 'lucide-react';
-import { blogService } from '../services/blogService';
+import { blogApi } from '../services/apiClient';
 import { CloudflareAccessService } from '../services/cloudflareAuthService';
 import { PostEditor } from './PostEditor';
 import type { BlogPost as BlogPostType, Author } from '../types/blog';
@@ -33,8 +33,8 @@ export function AdminDashboard() {
     const fetchData = async () => {
       try {
         const [postsData, authorsData] = await Promise.all([
-          blogService.getPosts(),
-          blogService.getAuthors()
+          blogApi.getPosts(),
+          blogApi.getAuthors()
         ]);
         setPosts(postsData);
         setAuthors(authorsData);
@@ -56,7 +56,7 @@ export function AdminDashboard() {
   const handleDeletePost = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
-        await blogService.deletePost(id);
+        await blogApi.deletePost(id);
         setPosts(posts.filter(post => post.id !== id));
       } catch (error) {
         console.error('Error deleting post:', error);

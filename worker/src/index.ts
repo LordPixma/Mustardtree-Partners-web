@@ -908,6 +908,183 @@ async function handleGetDocumentActivity(request: Request, env: Env, user: AuthU
   return jsonResponse({ activity });
 }
 
+// ----- BLOG API -----
+
+function blogPostFromRow(row: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: row.id, title: row.title, slug: row.slug, excerpt: row.excerpt,
+    content: row.content, authorId: row.author_id, featuredImage: row.featured_image,
+    videoUrl: row.video_url, status: row.status, category: row.category,
+    tags: row.tags ? JSON.parse(row.tags as string) : [],
+    readingTime: row.reading_time,
+    seo: { metaTitle: row.seo_title, metaDescription: row.seo_description, keywords: row.seo_keywords ? JSON.parse(row.seo_keywords as string) : [] },
+    publishedAt: row.published_at, createdAt: row.created_at, updatedAt: row.updated_at,
+  };
+}
+
+function authorFromRow(row: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: row.id, name: row.name, bio: row.bio, email: row.email,
+    headshot: row.headshot, position: row.position,
+    createdAt: row.created_at, updatedAt: row.updated_at,
+  };
+}
+
+// GET /api/blog/posts?status=published
+async function handleGetBlogPosts(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const status = url.searchParams.get('status');
+
+  let query = 'SELECT * FROM blog_posts';
+  const params: string[] = [];
+  if (status) { query += ' WHERE status = ?'; params.push(status); }
+  query += ' ORDER BY COALESCE(published_at, created_at) DESC';
+
+  const results = await env.DB.prepare(query).bind(...params).all();
+  const posts = (results.results || []).map(blogPostFromRow);
+
+  // Attach authors
+  const authorIds = [...new Set(posts.map((p: Record<string, unknown>) => p.authorId as string))];
+  if (authorIds.length > 0) {
+    const authors = await env.DB.prepare(`SELECT * FROM authors WHERE id IN (${authorIds.map(() => '?').join(',')})`).bind(...authorIds).all();
+    const authorMap = new Map((authors.results || []).map((a: Record<string, unknown>) => [a.id, authorFromRow(a)]));
+    for (const post of posts) { post.author = authorMap.get(post.authorId as string) || null; }
+  }
+
+  return jsonResponse({ posts });
+}
+
+// GET /api/blog/posts/:slug
+async function handleGetBlogPostBySlug(env: Env, slug: string): Promise<Response> {
+  const row = await env.DB.prepare('SELECT * FROM blog_posts WHERE slug = ?').bind(slug).first();
+  if (!row) return jsonResponse({ error: 'Post not found' }, 404);
+
+  const post = blogPostFromRow(row);
+  const author = await env.DB.prepare('SELECT * FROM authors WHERE id = ?').bind(post.authorId).first();
+  if (author) post.author = authorFromRow(author);
+
+  return jsonResponse({ post });
+}
+
+// POST /api/blog/posts
+async function handleCreateBlogPost(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  if (!isStaff(user)) return jsonResponse({ error: 'Access denied' }, 403);
+
+  const body = await request.json<Record<string, unknown>>();
+  const id = generateId('post');
+  const now = new Date().toISOString();
+  const slug = sanitize((body.slug as string) || (body.title as string || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+  const status = (body.status as string) || 'draft';
+  const content = body.content as string || '';
+  const readingTime = Math.ceil(content.trim().split(/\s+/).length / 200);
+
+  await env.DB.prepare(
+    `INSERT INTO blog_posts (id, title, slug, excerpt, content, author_id, featured_image, video_url, status, category, tags, reading_time, seo_title, seo_description, seo_keywords, published_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(
+    id, sanitize(body.title as string || ''), slug, sanitize(body.excerpt as string || ''),
+    content, body.authorId || null, body.featuredImage || null, body.videoUrl || null,
+    status, body.category || null, body.tags ? JSON.stringify(body.tags) : null, readingTime,
+    body.seoTitle || body.title || null, body.seoDescription || body.excerpt || null,
+    body.seoKeywords ? JSON.stringify(body.seoKeywords) : null,
+    status === 'published' ? now : null, now, now
+  ).run();
+
+  const created = await env.DB.prepare('SELECT * FROM blog_posts WHERE id = ?').bind(id).first();
+  return jsonResponse({ post: blogPostFromRow(created!) }, 201);
+}
+
+// PUT /api/blog/posts/:id
+async function handleUpdateBlogPost(request: Request, env: Env, user: AuthUser, postId: string): Promise<Response> {
+  if (!isStaff(user)) return jsonResponse({ error: 'Access denied' }, 403);
+
+  const existing = await env.DB.prepare('SELECT * FROM blog_posts WHERE id = ?').bind(postId).first();
+  if (!existing) return jsonResponse({ error: 'Post not found' }, 404);
+
+  const body = await request.json<Record<string, unknown>>();
+  const now = new Date().toISOString();
+  const status = (body.status as string) || existing.status;
+  const wasPublished = existing.status === 'published';
+  const publishedAt = status === 'published' && !wasPublished ? now : existing.published_at;
+  const content = (body.content as string) || existing.content as string;
+  const readingTime = Math.ceil(content.trim().split(/\s+/).length / 200);
+
+  await env.DB.prepare(
+    `UPDATE blog_posts SET title=?, slug=?, excerpt=?, content=?, author_id=?, featured_image=?, video_url=?, status=?, category=?, tags=?, reading_time=?, seo_title=?, seo_description=?, seo_keywords=?, published_at=?, updated_at=? WHERE id=?`
+  ).bind(
+    sanitize((body.title as string) || existing.title as string),
+    sanitize((body.slug as string) || existing.slug as string),
+    sanitize((body.excerpt as string) || existing.excerpt as string),
+    content, body.authorId || existing.author_id, body.featuredImage ?? existing.featured_image,
+    body.videoUrl ?? existing.video_url, status, body.category ?? existing.category,
+    body.tags ? JSON.stringify(body.tags) : existing.tags, readingTime,
+    body.seoTitle ?? existing.seo_title, body.seoDescription ?? existing.seo_description,
+    body.seoKeywords ? JSON.stringify(body.seoKeywords) : existing.seo_keywords,
+    publishedAt, now, postId
+  ).run();
+
+  const updated = await env.DB.prepare('SELECT * FROM blog_posts WHERE id = ?').bind(postId).first();
+  return jsonResponse({ post: blogPostFromRow(updated!) });
+}
+
+// DELETE /api/blog/posts/:id
+async function handleDeleteBlogPost(env: Env, user: AuthUser, postId: string): Promise<Response> {
+  if (!isStaff(user)) return jsonResponse({ error: 'Access denied' }, 403);
+  await env.DB.prepare('DELETE FROM blog_posts WHERE id = ?').bind(postId).run();
+  return jsonResponse({ success: true });
+}
+
+// GET /api/blog/authors
+async function handleGetAuthors(env: Env): Promise<Response> {
+  const results = await env.DB.prepare('SELECT * FROM authors ORDER BY name').all();
+  return jsonResponse({ authors: (results.results || []).map(authorFromRow) });
+}
+
+// POST /api/blog/authors
+async function handleCreateAuthor(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  if (!isStaff(user)) return jsonResponse({ error: 'Access denied' }, 403);
+  const body = await request.json<Record<string, unknown>>();
+  const id = generateId('author');
+  const now = new Date().toISOString();
+
+  await env.DB.prepare(
+    'INSERT INTO authors (id, name, bio, email, headshot, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(id, sanitize(body.name as string || ''), sanitize(body.bio as string || ''), sanitize(body.email as string || ''), body.headshot || null, body.position || null, now, now).run();
+
+  const created = await env.DB.prepare('SELECT * FROM authors WHERE id = ?').bind(id).first();
+  return jsonResponse({ author: authorFromRow(created!) }, 201);
+}
+
+// POST /api/notifications/send (queue an email notification)
+async function handleSendNotification(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  if (!isStaff(user)) return jsonResponse({ error: 'Access denied' }, 403);
+
+  const body = await request.json<{ type: string; recipientEmail: string; subject: string; body: string }>();
+  if (!body.recipientEmail || !body.subject) return jsonResponse({ error: 'recipientEmail and subject required' }, 400);
+
+  await env.DB.prepare(
+    'INSERT INTO notifications (type, recipient_email, subject, body) VALUES (?, ?, ?, ?)'
+  ).bind(body.type || 'general', sanitize(body.recipientEmail), sanitize(body.subject), sanitize(body.body || '')).run();
+
+  return jsonResponse({ success: true, message: 'Notification queued' }, 201);
+}
+
+// GET /api/notifications
+async function handleGetNotifications(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  if (!isStaff(user)) return jsonResponse({ error: 'Access denied' }, 403);
+
+  const url = new URL(request.url);
+  const limit = Math.min(100, parseInt(url.searchParams.get('limit') || '50'));
+  const results = await env.DB.prepare('SELECT * FROM notifications ORDER BY created_at DESC LIMIT ?').bind(limit).all();
+
+  return jsonResponse({
+    notifications: (results.results || []).map((r: Record<string, unknown>) => ({
+      id: r.id, type: r.type, recipientEmail: r.recipient_email,
+      subject: r.subject, body: r.body, status: r.status, error: r.error, createdAt: r.created_at,
+    })),
+  });
+}
+
 // ----- RATE LIMITING -----
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -1053,6 +1230,27 @@ export default {
       return jsonResponse({ status: 'ok', environment: env.ENVIRONMENT }, 200, cors);
     }
 
+    // Public blog endpoints (no auth required)
+    if (path === '/api/blog/posts' && request.method === 'GET') {
+      const response = await handleGetBlogPosts(request, env);
+      const newHeaders = new Headers(response.headers);
+      for (const [key, value] of Object.entries(cors)) newHeaders.set(key, value);
+      return new Response(response.body, { status: response.status, headers: newHeaders });
+    }
+    if (path.match(/^\/api\/blog\/posts\/[^/]+$/) && request.method === 'GET') {
+      const slug = path.split('/')[4];
+      const response = await handleGetBlogPostBySlug(env, slug);
+      const newHeaders = new Headers(response.headers);
+      for (const [key, value] of Object.entries(cors)) newHeaders.set(key, value);
+      return new Response(response.body, { status: response.status, headers: newHeaders });
+    }
+    if (path === '/api/blog/authors' && request.method === 'GET') {
+      const response = await handleGetAuthors(env);
+      const newHeaders = new Headers(response.headers);
+      for (const [key, value] of Object.entries(cors)) newHeaders.set(key, value);
+      return new Response(response.body, { status: response.status, headers: newHeaders });
+    }
+
     // Shared document download (unauthenticated - uses token)
     if (path.match(/^\/api\/shared\/[a-f0-9]+$/) && request.method === 'GET') {
       const token = path.split('/')[3];
@@ -1110,6 +1308,20 @@ export default {
         response = await handleShareDocument(request, env, user, docId);
       } else if (path === '/api/analytics' && request.method === 'GET') {
         response = await handleGetAnalytics(request, env, user);
+      } else if (path === '/api/blog/posts' && request.method === 'POST') {
+        response = await handleCreateBlogPost(request, env, user);
+      } else if (path.match(/^\/api\/blog\/posts\/[^/]+$/) && request.method === 'PUT') {
+        const postId = path.split('/')[4];
+        response = await handleUpdateBlogPost(request, env, user, postId);
+      } else if (path.match(/^\/api\/blog\/posts\/[^/]+$/) && request.method === 'DELETE') {
+        const postId = path.split('/')[4];
+        response = await handleDeleteBlogPost(env, user, postId);
+      } else if (path === '/api/blog/authors' && request.method === 'POST') {
+        response = await handleCreateAuthor(request, env, user);
+      } else if (path === '/api/notifications/send' && request.method === 'POST') {
+        response = await handleSendNotification(request, env, user);
+      } else if (path === '/api/notifications' && request.method === 'GET') {
+        response = await handleGetNotifications(request, env, user);
       } else {
         response = jsonResponse({ error: 'Not found' }, 404);
       }

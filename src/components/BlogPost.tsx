@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, User, ArrowLeft, Share2 } from 'lucide-react';
-import { blogService } from '../services/blogService';
+import { blogApi } from '../services/apiClient';
 import type { BlogPost as BlogPostType } from '../types/blog';
 
 export function BlogPost() {
@@ -15,11 +15,9 @@ export function BlogPost() {
     const fetchPost = async () => {
       if (!slug) { setNotFound(true); setLoading(false); return; }
       try {
-        const fetchedPost = await blogService.getPostBySlug(slug);
+        const fetchedPost = await blogApi.getPostBySlug(slug);
         if (fetchedPost && fetchedPost.status === 'published') {
-          const postsWithAuthors = await blogService.getPosts();
-          const postWithAuthor = postsWithAuthors.find(p => p.id === fetchedPost.id);
-          setPost(postWithAuthor || fetchedPost);
+          setPost(fetchedPost);
         } else {
           setNotFound(true);
         }
