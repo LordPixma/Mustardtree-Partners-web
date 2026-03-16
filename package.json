@@ -8,10 +8,6 @@
     "build": "npx vite build",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "preview": "npx vite preview",
-    "generate-credentials": "node scripts/generate-credentials.js",
-    "generate-credentials:help": "node scripts/generate-credentials.js --help",
-    "migrate-auth": "node scripts/migrate-auth.js",
-    "migrate-auth:help": "node scripts/migrate-auth.js --help",
     "setup-r2": "wrangler r2 bucket create mustardtree-documents && wrangler r2 bucket cors set mustardtree-documents --file cors.json",
     "deploy": "npm run build && wrangler pages deploy dist --project-name=mustardtree-web",
     "deploy:api": "cd worker && npm run deploy",
@@ -20,7 +16,6 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "bcryptjs": "^3.0.2",
     "clsx": "latest",
     "framer-motion": "^11.5.4",
     "lucide-react": "0.522.0",
@@ -31,7 +26,6 @@
     "tailwind-merge": "latest"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.11.18",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",

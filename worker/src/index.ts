@@ -1207,7 +1207,49 @@ async function handleGetMe(user: AuthUser): Promise<Response> {
 
 // ----- ROUTER -----
 
+// ----- NOTIFICATION EMAIL PROCESSOR -----
+
+async function processNotificationQueue(env: Env): Promise<void> {
+  const pending = await env.DB.prepare(
+    "SELECT * FROM notifications WHERE status = 'pending' ORDER BY created_at LIMIT 10"
+  ).all();
+
+  for (const row of pending.results || []) {
+    try {
+      // Send via MailChannels (free for Cloudflare Workers)
+      const mailResponse = await fetch('https://api.mailchannels.net/tx/v1/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: row.recipient_email as string }] }],
+          from: { email: 'noreply@mustardtreegroup.com', name: 'MustardTree Partners' },
+          subject: row.subject as string,
+          content: [{ type: 'text/html', value: row.body as string }],
+        }),
+      });
+
+      if (mailResponse.ok || mailResponse.status === 202) {
+        await env.DB.prepare("UPDATE notifications SET status = 'sent' WHERE id = ?").bind(row.id).run();
+      } else {
+        const errText = await mailResponse.text();
+        await env.DB.prepare("UPDATE notifications SET status = 'failed', error = ? WHERE id = ?").bind(errText.slice(0, 500), row.id).run();
+      }
+    } catch (e) {
+      const errMsg = e instanceof Error ? e.message : 'Unknown error';
+      await env.DB.prepare("UPDATE notifications SET status = 'failed', error = ? WHERE id = ?").bind(errMsg.slice(0, 500), row.id).run();
+    }
+  }
+
+  // Clean up expired share links
+  await env.DB.prepare("DELETE FROM share_links WHERE expires_at < datetime('now')").run();
+}
+
 export default {
+  // Cron Trigger: process notification queue
+  async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
+    await processNotificationQueue(env);
+  },
+
   async fetch(request: Request, env: Env): Promise<Response> {
     const cors = corsHeaders(request, env);
 

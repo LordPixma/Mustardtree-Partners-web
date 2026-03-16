@@ -22,6 +22,10 @@ binding = "DB"
 database_name = "mustardtree-portal"
 database_id = "692fcd4b-9757-4d00-b821-60300e0c00e5"
 
+# Cron Trigger - process notification queue every 5 minutes
+[triggers]
+crons = ["*/5 * * * *"]
+
 # Development overrides
 [env.dev]
 vars = { ENVIRONMENT = "development", ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173" }
