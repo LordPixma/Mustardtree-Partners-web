@@ -212,7 +212,7 @@ export function GisServices() {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       <Navbar />
 
       {/* Hero Section */}
@@ -240,7 +240,7 @@ export function GisServices() {
       </section>
 
       {/* Introduction */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -248,10 +248,10 @@ export function GisServices() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="text-center"
           >
-            <p className="text-lg text-gray-700 leading-relaxed mb-6">
+            <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
               By combining geospatial analytics with our established strengths in business intelligence, governance, and advisory services, we deliver insight that goes beyond charts and spreadsheets — revealing the <strong>where</strong>, <strong>why</strong>, and <strong>what next</strong> behind your data.
             </p>
-            <p className="text-lg text-gray-700 leading-relaxed">
+            <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
               Whether you are planning expansion, managing risk, optimising operations, or serving communities more effectively, our GIS services transform complex location data into clear, actionable intelligence.
             </p>
           </motion.div>
@@ -259,7 +259,7 @@ export function GisServices() {
       </section>
 
       {/* What Is Spatial Intelligence */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             ref={whatIsRef}
@@ -268,10 +268,10 @@ export function GisServices() {
             transition={{ duration: 0.8 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-6">
+            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-white mb-6">
               What Is <span className="text-yellow-600">Spatial Intelligence</span>?
             </h2>
-            <p className="text-lg text-gray-700 max-w-3xl mx-auto mb-8">
+            <p className="text-lg text-gray-700 dark:text-gray-300 max-w-3xl mx-auto mb-8">
               Spatial Intelligence is the practice of analysing data through a geographic lens to identify patterns, trends, risks, and opportunities that are invisible in traditional reporting.
             </p>
           </motion.div>
@@ -280,9 +280,9 @@ export function GisServices() {
             initial={{ opacity: 0, y: 30 }}
             animate={whatIsInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="bg-white rounded-xl shadow-lg p-8 max-w-4xl mx-auto"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-4xl mx-auto"
           >
-            <p className="text-gray-700 mb-6 font-medium">It allows organisations to:</p>
+            <p className="text-gray-700 dark:text-gray-300 mb-6 font-medium">It allows organisations to:</p>
             <ul className="space-y-4">
               {[
                 'Understand how geography impacts performance',
@@ -311,7 +311,7 @@ export function GisServices() {
       </section>
 
       {/* Service Offerings */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             ref={servicesRef}
@@ -320,7 +320,7 @@ export function GisServices() {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-white mb-4">
               Our GIS <span className="text-yellow-600">Service Offerings</span>
             </h2>
           </motion.div>
@@ -334,25 +334,25 @@ export function GisServices() {
                   initial={{ opacity: 0, y: 30 }}
                   animate={servicesInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.8, delay: index * 0.15 }}
-                  className="bg-gray-50 rounded-xl p-8 md:p-10"
+                  className="bg-gray-50 dark:bg-gray-800 rounded-xl p-8 md:p-10"
                 >
                   <div className="flex flex-col lg:flex-row lg:items-start gap-8">
                     <div className="flex-shrink-0">
-                      <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center">
+                      <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
                         <Icon className="h-8 w-8 text-yellow-600" />
                       </div>
                     </div>
                     <div className="flex-grow">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-yellow-600 font-semibold">{index + 1}.</span>
-                        <h3 className="text-2xl font-semibold text-gray-900">{offering.title}</h3>
+                        <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">{offering.title}</h3>
                       </div>
                       <p className="text-lg text-yellow-600 font-medium mb-3">{offering.subtitle}</p>
-                      <p className="text-gray-700 mb-6">{offering.description}</p>
+                      <p className="text-gray-700 dark:text-gray-300 mb-6">{offering.description}</p>
 
                       <div className="grid md:grid-cols-2 gap-8">
                         <div>
-                          <h4 className="font-semibold text-gray-900 mb-3">Services include:</h4>
+                          <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Services include:</h4>
                           <ul className="space-y-2">
                             {offering.services.map((service, sIndex) => (
                               <li key={sIndex} className="flex items-start gap-2 text-gray-600">
@@ -363,7 +363,7 @@ export function GisServices() {
                           </ul>
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-900 mb-3">Typical use cases:</h4>
+                          <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Typical use cases:</h4>
                           <ul className="space-y-2">
                             {offering.useCases.map((useCase, uIndex) => (
                               <li key={uIndex} className="flex items-start gap-2 text-gray-600">
@@ -432,7 +432,7 @@ export function GisServices() {
       </section>
 
       {/* How We Work */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             ref={howWeWorkRef}
@@ -441,10 +441,10 @@ export function GisServices() {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-white mb-4">
               How We <span className="text-yellow-600">Work</span>
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 dark:text-gray-400">
               We deliver GIS solutions through a structured, business-led approach
             </p>
           </motion.div>
@@ -467,8 +467,8 @@ export function GisServices() {
                   )}
                 </div>
                 <div className="pt-2">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{step.title}</h3>
-                  <p className="text-gray-600">{step.description}</p>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{step.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-400">{step.description}</p>
                 </div>
               </motion.div>
             ))}
@@ -477,7 +477,7 @@ export function GisServices() {
       </section>
 
       {/* Commercial Packages */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             ref={packagesRef}
@@ -486,10 +486,10 @@ export function GisServices() {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-white mb-4">
               Commercial <span className="text-yellow-600">Packages</span>
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 dark:text-gray-400">
               We offer productised GIS services to suit organisations of all sizes
             </p>
           </motion.div>
@@ -504,7 +504,7 @@ export function GisServices() {
                 className={`rounded-xl p-8 ${
                   pkg.highlighted
                     ? 'bg-yellow-500 text-gray-900 shadow-xl transform scale-105'
-                    : 'bg-white shadow-lg'
+                    : 'bg-white dark:bg-gray-800 shadow-lg'
                 }`}
               >
                 <h3 className={`text-2xl font-semibold mb-6 ${pkg.highlighted ? 'text-gray-900' : 'text-gray-900'}`}>
@@ -514,7 +514,7 @@ export function GisServices() {
                   {pkg.features.map((feature, fIndex) => (
                     <li key={fIndex} className="flex items-start gap-3">
                       <CheckCircle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${pkg.highlighted ? 'text-gray-900' : 'text-yellow-500'}`} />
-                      <span className={pkg.highlighted ? 'text-gray-900' : 'text-gray-700'}>{feature}</span>
+                      <span className={pkg.highlighted ? 'text-gray-900' : 'text-gray-700 dark:text-gray-300'}>{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -526,7 +526,7 @@ export function GisServices() {
             initial={{ opacity: 0 }}
             animate={packagesInView ? { opacity: 1 } : {}}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="text-center text-gray-600 mt-10"
+            className="text-center text-gray-600 dark:text-gray-400 mt-10"
           >
             Pricing available on request. All engagements are scoped to client requirements.
           </motion.p>
@@ -534,7 +534,7 @@ export function GisServices() {
       </section>
 
       {/* Why Mustardtree Partners */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             ref={whyUsRef}
@@ -543,7 +543,7 @@ export function GisServices() {
             transition={{ duration: 0.8 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-white mb-4">
               Why <span className="text-yellow-600">Mustardtree Partners</span>?
             </h2>
           </motion.div>
@@ -552,7 +552,7 @@ export function GisServices() {
             initial={{ opacity: 0, y: 30 }}
             animate={whyUsInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="bg-gray-50 rounded-xl p-8"
+            className="bg-gray-50 dark:bg-gray-800 rounded-xl p-8"
           >
             <ul className="space-y-4">
               {whyUsPoints.map((point, index) => (
@@ -564,7 +564,7 @@ export function GisServices() {
                   className="flex items-start gap-3"
                 >
                   <CheckCircle className="h-6 w-6 text-yellow-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-gray-700 text-lg">{point}</span>
+                  <span className="text-gray-700 dark:text-gray-300 text-lg">{point}</span>
                 </motion.li>
               ))}
             </ul>
@@ -581,7 +581,7 @@ export function GisServices() {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-6">
+            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-white mb-6">
               Ready to unlock the power of location data?
             </h2>
             <p className="text-lg text-gray-800 mb-8">

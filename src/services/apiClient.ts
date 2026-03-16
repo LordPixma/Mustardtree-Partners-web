@@ -274,4 +274,34 @@ export const authApi = {
   },
 };
 
+// ----- Sharing API -----
+
+export const sharingApi = {
+  async createShareLink(documentId: string, expiresInHours = 24): Promise<{ token: string; expiresAt: string }> {
+    return apiFetch(`/api/documents/${documentId}/share`, {
+      method: 'POST',
+      body: JSON.stringify({ expiresInHours }),
+    });
+  },
+
+  getShareUrl(token: string): string {
+    return `${API_BASE}/api/shared/${token}`;
+  },
+};
+
+// ----- Analytics API -----
+
+export interface AnalyticsData {
+  downloadsByDay: Array<{ day: string; count: number }>;
+  topDocuments: Array<{ name: string; accessCount: number }>;
+  userActivity: Array<{ userEmail: string; action: string; count: number }>;
+}
+
+export const analyticsApi = {
+  async getAnalytics(customerId?: string): Promise<AnalyticsData> {
+    const params = customerId ? `?customerId=${customerId}` : '';
+    return apiFetch<AnalyticsData>(`/api/analytics${params}`);
+  },
+};
+
 export { ApiError };

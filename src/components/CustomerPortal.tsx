@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useCloudflareAuth } from '../services/cloudflareAuthService';
-import { documentApi, folderApi, statsApi, activityApi, ApiError } from '../services/apiClient';
+import { documentApi, folderApi, statsApi, activityApi, sharingApi, ApiError } from '../services/apiClient';
 import type { Document, DocumentFolder } from '../types/documents';
 import type { PortalStats, ActivityEntry } from '../services/apiClient';
 import {
@@ -34,6 +34,8 @@ import {
   Moon,
   Sun,
   Keyboard,
+  Share2,
+  Link,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { validateDocumentUpload } from '../utils/fileValidation';
@@ -393,6 +395,18 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
     }
   };
 
+  // ----- Sharing -----
+  const handleShare = async (doc: Document) => {
+    try {
+      const { token } = await sharingApi.createShareLink(doc.id, 24);
+      const shareUrl = `${window.location.origin}/api/shared/${token}`;
+      await navigator.clipboard.writeText(shareUrl);
+      showNotification('success', `Share link copied! Expires in 24 hours.`);
+    } catch (error) {
+      showNotification('error', error instanceof ApiError ? error.message : 'Failed to create share link');
+    }
+  };
+
   // ----- Folder Management -----
   const handleCreateFolder = async () => {
     if (!newFolderName.trim() || !customerId) return;
@@ -543,7 +557,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors" role="main" aria-label="Document Portal">
       {/* Toast */}
       {notification && (
         <div className={cn(
@@ -565,6 +579,8 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="lg:hidden p-1.5 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+                aria-label="Toggle sidebar menu"
+                aria-expanded={sidebarOpen}
               >
                 <Menu className="w-5 h-5" />
               </button>
@@ -915,10 +931,11 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({ onError }) => {
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                           <button onClick={() => handlePreview(doc)} title="Preview" className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"><Eye className="w-4 h-4 text-gray-500 dark:text-gray-400" /></button>
                           <button onClick={() => handleDownload(doc)} title="Download" className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"><Download className="w-4 h-4 text-gray-500 dark:text-gray-400" /></button>
+                          <button onClick={() => handleShare(doc)} title="Share" className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"><Share2 className="w-4 h-4 text-gray-500 dark:text-gray-400" /></button>
                           {doc.versions.length > 1 && (
-                            <button onClick={() => setVersionDoc(doc)} title="Version history" className="p-1.5 rounded hover:bg-gray-200"><History className="w-4 h-4 text-gray-500" /></button>
+                            <button onClick={() => setVersionDoc(doc)} title="Version history" className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"><History className="w-4 h-4 text-gray-500 dark:text-gray-400" /></button>
                           )}
-                          <button onClick={() => openActivity(doc)} title="Activity" className="p-1.5 rounded hover:bg-gray-200"><Activity className="w-4 h-4 text-gray-500" /></button>
+                          <button onClick={() => openActivity(doc)} title="Activity" className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600"><Activity className="w-4 h-4 text-gray-500 dark:text-gray-400" /></button>
                         </div>
                       </div>
                     );

@@ -908,6 +908,114 @@ async function handleGetDocumentActivity(request: Request, env: Env, user: AuthU
   return jsonResponse({ activity });
 }
 
+// ----- RATE LIMITING -----
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string, maxRequests = 60, windowSec = 60): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + windowSec * 1000 });
+    return true;
+  }
+  if (entry.count >= maxRequests) return false;
+  entry.count++;
+  return true;
+}
+
+// ----- DOCUMENT SHARING -----
+
+// POST /api/documents/:id/share
+async function handleShareDocument(request: Request, env: Env, user: AuthUser, documentId: string): Promise<Response> {
+  if (!(await canAccessDocument(env.DB, documentId, user, 'view'))) {
+    return jsonResponse({ error: 'Access denied' }, 403);
+  }
+
+  const body = await request.json<{ expiresInHours?: number }>();
+  const expiresInHours = Math.min(168, Math.max(1, body.expiresInHours || 24)); // 1h-7d, default 24h
+
+  const token = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+  const expiresAt = new Date(Date.now() + expiresInHours * 3600_000).toISOString();
+
+  await env.DB.prepare(
+    `INSERT INTO share_links (token, document_id, created_by, expires_at)
+     VALUES (?, ?, ?, ?)`
+  ).bind(token, documentId, user.id, expiresAt).run();
+
+  await logAccess(env.DB, documentId, user, 'permission_change', request, `Created share link (expires ${expiresAt})`);
+
+  return jsonResponse({ token, expiresAt, expiresInHours });
+}
+
+// GET /api/shared/:token (unauthenticated download via share link)
+async function handleSharedDownload(env: Env, token: string): Promise<Response> {
+  const link = await env.DB.prepare(
+    'SELECT * FROM share_links WHERE token = ? AND expires_at > datetime(\'now\')'
+  ).bind(token).first<{ document_id: string; download_count: number }>();
+
+  if (!link) return jsonResponse({ error: 'Link expired or invalid' }, 404);
+
+  const doc = await env.DB.prepare('SELECT * FROM documents WHERE id = ?').bind(link.document_id).first();
+  if (!doc) return jsonResponse({ error: 'Document not found' }, 404);
+
+  const version = await env.DB.prepare(
+    'SELECT * FROM document_versions WHERE document_id = ? AND version = ?'
+  ).bind(link.document_id, doc.current_version).first();
+  if (!version) return jsonResponse({ error: 'Version not found' }, 404);
+
+  const object = await env.DOCUMENTS_BUCKET.get(version.r2_key as string);
+  if (!object) return jsonResponse({ error: 'File not found' }, 404);
+
+  // Increment download count
+  await env.DB.prepare('UPDATE share_links SET download_count = download_count + 1 WHERE token = ?').bind(token).run();
+
+  return new Response(object.body, {
+    headers: {
+      'Content-Type': (version.mime_type as string) || 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(version.file_name as string)}"`,
+    },
+  });
+}
+
+// GET /api/analytics?customerId=
+async function handleGetAnalytics(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  if (!isStaff(user)) return jsonResponse({ error: 'Access denied' }, 403);
+
+  const url = new URL(request.url);
+  const customerId = url.searchParams.get('customerId');
+  const customerFilter = customerId ? ' AND d.customer_id = ?' : '';
+  const params = customerId ? [customerId] : [];
+
+  const [downloadsByDay, topDocs, userActivity] = await Promise.all([
+    env.DB.prepare(
+      `SELECT DATE(al.timestamp) as day, COUNT(*) as count FROM access_log al
+       JOIN documents d ON al.document_id = d.id
+       WHERE al.action = 'download' AND al.timestamp > datetime('now', '-30 days')${customerFilter}
+       GROUP BY DATE(al.timestamp) ORDER BY day`
+    ).bind(...params).all(),
+    env.DB.prepare(
+      `SELECT d.name, COUNT(al.rowid) as access_count FROM access_log al
+       JOIN documents d ON al.document_id = d.id
+       WHERE al.timestamp > datetime('now', '-30 days')${customerFilter}
+       GROUP BY al.document_id ORDER BY access_count DESC LIMIT 10`
+    ).bind(...params).all(),
+    env.DB.prepare(
+      `SELECT al.user_email, al.action, COUNT(*) as count FROM access_log al
+       JOIN documents d ON al.document_id = d.id
+       WHERE al.timestamp > datetime('now', '-30 days')${customerFilter}
+       GROUP BY al.user_email, al.action ORDER BY count DESC LIMIT 20`
+    ).bind(...params).all(),
+  ]);
+
+  return jsonResponse({
+    downloadsByDay: (downloadsByDay.results || []).map((r: Record<string, unknown>) => ({ day: r.day, count: r.count })),
+    topDocuments: (topDocs.results || []).map((r: Record<string, unknown>) => ({ name: r.name, accessCount: r.access_count })),
+    userActivity: (userActivity.results || []).map((r: Record<string, unknown>) => ({ userEmail: r.user_email, action: r.action, count: r.count })),
+  });
+}
+
 // GET /api/auth/me
 async function handleGetMe(user: AuthUser): Promise<Response> {
   return jsonResponse({
@@ -934,9 +1042,24 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    // Rate limiting
+    const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+    if (!checkRateLimit(clientIp)) {
+      return jsonResponse({ error: 'Too many requests' }, 429, cors);
+    }
+
     // Health check (unauthenticated)
     if (path === '/api/health') {
       return jsonResponse({ status: 'ok', environment: env.ENVIRONMENT }, 200, cors);
+    }
+
+    // Shared document download (unauthenticated - uses token)
+    if (path.match(/^\/api\/shared\/[a-f0-9]+$/) && request.method === 'GET') {
+      const token = path.split('/')[3];
+      const response = await handleSharedDownload(env, token);
+      const newHeaders = new Headers(response.headers);
+      for (const [key, value] of Object.entries(cors)) newHeaders.set(key, value);
+      return new Response(response.body, { status: response.status, headers: newHeaders });
     }
 
     // Authenticate
@@ -982,6 +1105,11 @@ export default {
         response = await handleCreateCustomer(request, env, user);
       } else if (path === '/api/audit-log' && request.method === 'GET') {
         response = await handleGetAuditLog(request, env, user);
+      } else if (path.match(/^\/api\/documents\/[^/]+\/share$/) && request.method === 'POST') {
+        const docId = path.split('/')[3];
+        response = await handleShareDocument(request, env, user, docId);
+      } else if (path === '/api/analytics' && request.method === 'GET') {
+        response = await handleGetAnalytics(request, env, user);
       } else {
         response = jsonResponse({ error: 'Not found' }, 404);
       }

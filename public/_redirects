@@ -1,5 +1,5 @@
+# API proxy to Worker backend
+/api/* https://mustardtree-api.samuel-1e5.workers.dev/api/:splat 200
+
 # Handle client-side routing for single page application
 /* /index.html 200
-
-# Redirect old URLs if needed (add specific redirects here)
-# /old-page /new-page 301

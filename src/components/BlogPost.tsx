@@ -13,16 +13,10 @@ export function BlogPost() {
 
   useEffect(() => {
     const fetchPost = async () => {
-      if (!slug) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
+      if (!slug) { setNotFound(true); setLoading(false); return; }
       try {
         const fetchedPost = await blogService.getPostBySlug(slug);
         if (fetchedPost && fetchedPost.status === 'published') {
-          // Fetch author data
           const postsWithAuthors = await blogService.getPosts();
           const postWithAuthor = postsWithAuthors.find(p => p.id === fetchedPost.id);
           setPost(postWithAuthor || fetchedPost);
@@ -36,16 +30,12 @@ export function BlogPost() {
         setLoading(false);
       }
     };
-
     fetchPost();
   }, [slug]);
 
   useEffect(() => {
-    // Update document title and meta tags for SEO
     if (post) {
       document.title = post.seo?.metaTitle || `${post.title} | MustardTree Partners`;
-      
-      // Update meta description
       const metaDescription = document.querySelector('meta[name="description"]');
       if (metaDescription) {
         metaDescription.setAttribute('content', post.seo?.metaDescription || post.excerpt);
@@ -54,64 +44,40 @@ export function BlogPost() {
   }, [post]);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+    return new Date(dateString).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
   const handleShare = async () => {
     if (navigator.share && post) {
       try {
-        await navigator.share({
-          title: post.title,
-          text: post.excerpt,
-          url: window.location.href,
-        });
-      } catch (error) {
-        // Fallback to clipboard
+        await navigator.share({ title: post.title, text: post.excerpt, url: window.location.href });
+      } catch {
         navigator.clipboard.writeText(window.location.href);
       }
     } else {
-      // Fallback to clipboard
       navigator.clipboard.writeText(window.location.href);
     }
   };
 
   const renderContent = (content: string) => {
-    // Simple markdown-like rendering
-    return content
-      .split('\n')
-      .map((line, index) => {
-        if (line.startsWith('# ')) {
-          return <h1 key={index} className="text-3xl font-bold text-gray-900 mt-8 mb-4">{line.slice(2)}</h1>;
-        } else if (line.startsWith('## ')) {
-          return <h2 key={index} className="text-2xl font-semibold text-gray-900 mt-6 mb-3">{line.slice(3)}</h2>;
-        } else if (line.startsWith('### ')) {
-          return <h3 key={index} className="text-xl font-semibold text-gray-900 mt-4 mb-2">{line.slice(4)}</h3>;
-        } else if (line.startsWith('- ')) {
-          return <li key={index} className="text-gray-700 leading-relaxed ml-4">{line.slice(2)}</li>;
-        } else if (line.startsWith('1. ') || /^\d+\. /.test(line)) {
-          return <li key={index} className="text-gray-700 leading-relaxed ml-4">{line.replace(/^\d+\. /, '')}</li>;
-        } else if (line.startsWith('**') && line.endsWith('**')) {
-          return <p key={index} className="text-gray-700 leading-relaxed mb-4"><strong>{line.slice(2, -2)}</strong></p>;
-        } else if (line.trim() === '') {
-          return <br key={index} />;
-        } else {
-          return <p key={index} className="text-gray-700 leading-relaxed mb-4">{line}</p>;
-        }
-      });
+    return content.split('\n').map((line, index) => {
+      if (line.startsWith('# ')) return <h1 key={index} className="text-3xl font-bold text-gray-900 dark:text-white mt-8 mb-4">{line.slice(2)}</h1>;
+      if (line.startsWith('## ')) return <h2 key={index} className="text-2xl font-semibold text-gray-900 dark:text-white mt-6 mb-3">{line.slice(3)}</h2>;
+      if (line.startsWith('### ')) return <h3 key={index} className="text-xl font-semibold text-gray-900 dark:text-white mt-4 mb-2">{line.slice(4)}</h3>;
+      if (line.startsWith('- ')) return <li key={index} className="text-gray-700 dark:text-gray-300 leading-relaxed ml-4">{line.slice(2)}</li>;
+      if (/^\d+\. /.test(line)) return <li key={index} className="text-gray-700 dark:text-gray-300 leading-relaxed ml-4">{line.replace(/^\d+\. /, '')}</li>;
+      if (line.startsWith('**') && line.endsWith('**')) return <p key={index} className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4"><strong>{line.slice(2, -2)}</strong></p>;
+      if (line.trim() === '') return <br key={index} />;
+      return <p key={index} className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">{line}</p>;
+    });
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading article...</p>
-          </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading article...</p>
         </div>
       </div>
     );
@@ -119,16 +85,12 @@ export function BlogPost() {
 
   if (notFound || !post) {
     return (
-      <div className="min-h-screen bg-gray-50 py-20">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-serif text-gray-900 mb-4">Article Not Found</h1>
-          <p className="text-gray-600 mb-8">The article you're looking for doesn't exist or has been removed.</p>
-          <a
-            href="/blog"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-500 text-gray-900 rounded-lg font-semibold hover:bg-yellow-400 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Blog
+          <h1 className="text-4xl font-serif text-gray-900 dark:text-white mb-4">Article Not Found</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-8">The article you're looking for doesn't exist or has been removed.</p>
+          <a href="/blog" className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-500 text-gray-900 rounded-lg font-semibold hover:bg-yellow-400 transition-colors">
+            <ArrowLeft className="h-4 w-4" /> Back to Blog
           </a>
         </div>
       </div>
@@ -136,143 +98,77 @@ export function BlogPost() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="mb-8"
-        >
-          <a
-            href="/blog"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Blog
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mb-8">
+          <a href="/blog" className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <ArrowLeft className="h-4 w-4" /> Back to Blog
           </a>
         </motion.div>
 
-        {/* Article */}
-        <motion.article
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="bg-white rounded-lg shadow-lg overflow-hidden"
-        >
-          {/* Featured Image */}
+        <motion.article initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
           {post.featuredImage && (
             <div className="h-64 md:h-96 overflow-hidden">
-              <img
-                src={post.featuredImage}
-                alt={post.title}
-                className="w-full h-full object-cover"
-              />
+              <img src={post.featuredImage} alt={post.title} className="w-full h-full object-cover" />
             </div>
           )}
 
           <div className="p-8 md:p-12">
-            {/* Category & Tags */}
-            <div className="flex items-center gap-2 mb-6">
+            <div className="flex flex-wrap items-center gap-2 mb-6">
               {post.category && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                  {post.category}
-                </span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">{post.category}</span>
               )}
               {post.tags && post.tags.map((tag: string) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800"
-                >
-                  {tag}
-                </span>
+                <span key={tag} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">{tag}</span>
               ))}
             </div>
 
-            {/* Title */}
-            <h1 className="text-4xl md:text-5xl font-serif text-gray-900 mb-6 leading-tight">
-              {post.title}
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-serif text-gray-900 dark:text-white mb-6 leading-tight">{post.title}</h1>
 
-            {/* Meta Information */}
-            <div className="flex items-center justify-between border-b border-gray-200 pb-6 mb-8">
-              <div className="flex items-center gap-6 text-gray-600">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>{formatDate(post.publishedAt || post.createdAt)}</span>
-                </div>
-                {post.readingTime && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    <span>{post.readingTime} min read</span>
-                  </div>
-                )}
+            <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-6 mb-8">
+              <div className="flex items-center gap-6 text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-2"><Calendar className="h-4 w-4" /><span>{formatDate(post.publishedAt || post.createdAt)}</span></div>
+                {post.readingTime && <div className="flex items-center gap-2"><Clock className="h-4 w-4" /><span>{post.readingTime} min read</span></div>}
               </div>
-              <button
-                onClick={handleShare}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <Share2 className="h-4 w-4" />
-                Share
+              <button onClick={handleShare} className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" aria-label="Share this article">
+                <Share2 className="h-4 w-4" /> <span className="hidden sm:inline">Share</span>
               </button>
             </div>
 
-            {/* Author */}
             {post.author && (
-              <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-4 mb-8 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 {post.author.headshot ? (
-                  <img
-                    src={post.author.headshot}
-                    alt={post.author.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
+                  <img src={post.author.headshot} alt={post.author.name} className="w-12 h-12 rounded-full object-cover" />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
-                    <User className="h-6 w-6 text-yellow-600" />
+                  <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                    <User className="h-6 w-6 text-yellow-600 dark:text-yellow-500" />
                   </div>
                 )}
                 <div>
-                  <p className="font-semibold text-gray-900">{post.author.name}</p>
-                  {post.author.position && (
-                    <p className="text-sm text-gray-600">{post.author.position}</p>
-                  )}
-                  {post.author.bio && (
-                    <p className="text-sm text-gray-600 mt-1">{post.author.bio}</p>
-                  )}
+                  <p className="font-semibold text-gray-900 dark:text-white">{post.author.name}</p>
+                  {post.author.position && <p className="text-sm text-gray-600 dark:text-gray-400">{post.author.position}</p>}
+                  {post.author.bio && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{post.author.bio}</p>}
                 </div>
               </div>
             )}
 
-            {/* Video */}
             {post.videoUrl && (
               <div className="mb-8">
-                <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                  <iframe
-                    src={post.videoUrl}
-                    title={post.title}
-                    className="w-full h-full"
-                    allowFullScreen
-                  />
+                <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                  <iframe src={post.videoUrl} title={post.title} className="w-full h-full" allowFullScreen />
                 </div>
               </div>
             )}
 
-            {/* Content */}
-            <div className="prose prose-lg max-w-none">
+            <div className="prose prose-lg dark:prose-invert max-w-none">
               {renderContent(post.content)}
             </div>
 
-            {/* Additional Images */}
             {post.images && post.images.length > 0 && (
               <div className="mt-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {post.images.map((image: string, index: number) => (
-                    <img
-                      key={index}
-                      src={image}
-                      alt={`${post.title} - Image ${index + 1}`}
-                      className="rounded-lg shadow-md"
-                    />
+                    <img key={index} src={image} alt={`${post.title} - Image ${index + 1}`} className="rounded-lg shadow-md" />
                   ))}
                 </div>
               </div>
