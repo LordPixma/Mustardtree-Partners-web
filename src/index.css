@@ -88,3 +88,16 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* Header height of the fixed Navbar (h-20 = 5rem). */
+:root {
+  --header-height: 5rem;
+}
+
+/*
+ * Offset in-page anchor jumps by the fixed-header height so section
+ * headings are not hidden beneath the sticky Navbar when scrolled to.
+ */
+section[id] {
+  scroll-margin-top: var(--header-height);
+}
