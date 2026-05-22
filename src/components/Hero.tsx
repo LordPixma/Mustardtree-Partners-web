@@ -26,9 +26,8 @@ export function Hero() {
         duration: 0.8
       }}>
           <h1 className="text-5xl md:text-7xl font-serif text-white mb-6 leading-tight">
-            Partners in Growth,
-            <br />
-            <span className="text-yellow-500">Governance & Intelligence</span>
+            Governance. Intelligence.{' '}
+            <span className="text-yellow-500">Growth.</span>
           </h1>
         </motion.div>
         <motion.p initial={{
@@ -41,8 +40,10 @@ export function Hero() {
         duration: 0.8,
         delay: 0.2
       }} className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">
-          Helping businesses establish, manage, and grow compliant, data-driven
-          organisations.
+          Board-level governance, risk, and AI advisory — led by a practising
+          enterprise security architect with a legal background. Independent
+          counsel for organisations navigating regulation, technology, and
+          growth.
         </motion.p>
         <motion.div initial={{
         opacity: 0,

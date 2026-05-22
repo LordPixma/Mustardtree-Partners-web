@@ -1,29 +1,50 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Building2, BarChart3, Search, Lightbulb } from 'lucide-react';
+import { Building2, Shield, Search } from 'lucide-react';
+
 export function Services() {
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1
   });
+
+  // Cyber, AI & Identity Governance leads — it is the firm's differentiator.
   const services = [{
-    icon: Building2,
-    title: 'Corporate Governance & Secretarial',
-    description: 'Company formations, annual filings, board support, and compliance management to ensure your business operates within regulatory frameworks.'
+    icon: Shield,
+    title: 'Cyber, AI & Identity Governance',
+    lead: true,
+    description: "Independent governance of the risks technology now puts on the board's agenda.",
+    points: [
+      'AI governance & readiness (EU AI Act, ISO 42001, NIST AI RMF)',
+      'Cyber-risk governance & operational resilience',
+      'Identity & access governance (IAM/IDAM oversight)',
+      'Security policy, controls mapping & assurance'
+    ]
   }, {
-    icon: BarChart3,
-    title: 'Business Intelligence & Analytics',
-    description: 'Data dashboards, performance metrics, and compliance analytics that transform raw data into strategic insights for informed decision-making.'
+    icon: Building2,
+    title: 'Governance & Risk',
+    lead: false,
+    description: 'The governance foundations that underpin credible, compliant organisations.',
+    points: [
+      'Corporate governance & company secretarial',
+      'Annual filings & statutory compliance',
+      'Board support & governance framework design',
+      'Risk identification, assessment & registers'
+    ]
   }, {
     icon: Search,
-    title: 'Strategic Intelligence',
-    description: 'Ethical open-source and human-sourced intelligence providing clear due diligence, market insights, and risk analysis to help organisations identify opportunities and navigate competitive landscapes confidently'
-  }, {
-    icon: Lightbulb,
-    title: 'Advisory & Support',
-    description: 'Business planning, governance training, and UK expansion guidance tailored to your unique needs and growth objectives.'
+    title: 'Intelligence & Analytics',
+    lead: false,
+    description: 'Rigorous, ethical intelligence and data that surface risk, opportunity, and competitive dynamics.',
+    points: [
+      'Due diligence & open-source intelligence (OSINT)',
+      'Market & competitive landscape analysis',
+      'Business intelligence, dashboards & KPI reporting',
+      'Spatial intelligence & GIS (location-aware analytics)'
+    ]
   }];
+
   return <section id="services" className="py-24 bg-white dark:bg-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div ref={ref} initial={{
@@ -36,17 +57,17 @@ export function Services() {
         duration: 0.8
       }} className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-serif text-gray-900 dark:text-white mb-4">
-            Our <span className="text-yellow-600 dark:text-yellow-500">Services</span>
+            What We <span className="text-yellow-600 dark:text-yellow-500">Do</span>
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Comprehensive solutions designed to support your business at every
-            stage of growth
+            Three propositions for organisations navigating regulation,
+            technology, and growth
           </p>
         </motion.div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {services.map((service, index) => {
           const Icon = service.icon;
-          return <motion.div key={index} initial={{
+          return <motion.div key={service.title} initial={{
             opacity: 0,
             y: 30
           }} animate={inView ? {
@@ -55,16 +76,24 @@ export function Services() {
           } : {}} transition={{
             duration: 0.8,
             delay: index * 0.1
-          }} className="bg-gray-50 dark:bg-gray-700 p-8 rounded-lg hover:shadow-xl transition-all duration-300 group hover:-translate-y-2">
-                <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center mb-6 group-hover:bg-yellow-500 transition-colors duration-300">
-                  <Icon className="text-yellow-600 dark:text-yellow-500 group-hover:text-white transition-colors duration-300" size={32} />
+          }} className={`p-8 rounded-lg hover:shadow-xl transition-all duration-300 group hover:-translate-y-2 ${service.lead ? 'bg-gray-900 dark:bg-gray-900 ring-2 ring-yellow-500' : 'bg-gray-50 dark:bg-gray-700'}`}>
+                <div className={`w-16 h-16 rounded-lg flex items-center justify-center mb-6 transition-colors duration-300 ${service.lead ? 'bg-yellow-500' : 'bg-yellow-100 dark:bg-yellow-900/30 group-hover:bg-yellow-500'}`}>
+                  <Icon className={`transition-colors duration-300 ${service.lead ? 'text-gray-900' : 'text-yellow-600 dark:text-yellow-500 group-hover:text-white'}`} size={32} />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className={`text-xl font-semibold mb-3 ${service.lead ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                   {service.title}
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                <p className={`leading-relaxed mb-5 ${service.lead ? 'text-gray-300' : 'text-gray-600 dark:text-gray-300'}`}>
                   {service.description}
                 </p>
+                <ul className="space-y-2">
+                  {service.points.map((point) => (
+                    <li key={point} className={`flex items-start gap-2 text-sm ${service.lead ? 'text-gray-300' : 'text-gray-600 dark:text-gray-300'}`}>
+                      <span className="text-yellow-500 mt-0.5 flex-shrink-0">▪</span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
               </motion.div>;
         })}
         </div>
