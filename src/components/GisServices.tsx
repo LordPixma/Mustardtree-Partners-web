@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
+import { Seo } from './Seo';
 
 export function GisServices() {
   const [heroRef, heroInView] = useInView({ triggerOnce: true, threshold: 0.1 });
@@ -213,6 +214,11 @@ export function GisServices() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
+      <Seo
+        title="Spatial Intelligence & GIS"
+        description="Location-aware analytics and Geographic Information Systems (GIS) integrated into business strategy and governance — a capability of MustardTree Partners' Intelligence & Analytics practice."
+        path="/services/gis"
+      />
       <Navbar />
 
       {/* Hero Section */}

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Calendar, Clock, User, ArrowRight } from 'lucide-react';
 import { blogApi } from '../services/apiClient';
 import { BlogPost } from '../types/blog';
+import { Seo } from './Seo';
 
 export function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -45,6 +46,11 @@ export function Blog() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-20">
+      <Seo
+        title="Insights & Analysis"
+        description="Expert insights on corporate governance, AI and cyber risk, and strategic intelligence from MustardTree Partners."
+        path="/blog"
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

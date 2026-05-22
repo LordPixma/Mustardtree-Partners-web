@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { FileText, Mail, MapPin } from 'lucide-react';
+import { Seo } from './Seo';
 
 export function Terms() {
   return (
     <div className="min-h-screen bg-gray-50 py-20">
+      <Seo title="Terms & Conditions" description="The terms governing use of the MustardTree Partners website." path="/terms" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
