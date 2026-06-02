@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Mail, MapPin, Send } from 'lucide-react';
+import { Mail, MapPin, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 export function Contact() {
   const [ref, inView] = useInView({
     triggerOnce: true,
@@ -12,16 +12,40 @@ export function Contact() {
     email: '',
     message: ''
   });
-  const handleSubmit = (e: React.FormEvent) => {
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Form submitted:', formData);
-    alert('Thank you for your message. We will get back to you soon!');
-    setFormData({
-      name: '',
-      email: '',
-      message: ''
-    });
+    setStatus('submitting');
+    setErrorMessage('');
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+      if (!response.ok) {
+        let message = 'Something went wrong. Please try again.';
+        try {
+          const data = await response.json();
+          if (data && typeof data.error === 'string') message = data.error;
+        } catch {
+          // response had no JSON body
+        }
+        throw new Error(message);
+      }
+      setStatus('success');
+      setFormData({
+        name: '',
+        email: '',
+        message: ''
+      });
+    } catch (error) {
+      setStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
+    }
   };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -78,8 +102,16 @@ export function Contact() {
                 </label>
                 <textarea id="message" name="message" value={formData.message} onChange={handleChange} required rows={6} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all resize-none" />
               </div>
-              <button type="submit" className="w-full px-8 py-4 bg-yellow-500 text-gray-900 rounded-lg font-semibold hover:bg-yellow-400 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
-                Send Message
+              {status === 'success' && <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-700 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300">
+                  <CheckCircle2 size={20} className="flex-shrink-0" />
+                  <span>Thank you for your message. We will get back to you shortly.</span>
+                </div>}
+              {status === 'error' && <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+                  <AlertCircle size={20} className="flex-shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>}
+              <button type="submit" disabled={status === 'submitting'} className="w-full px-8 py-4 bg-yellow-500 text-gray-900 rounded-lg font-semibold hover:bg-yellow-400 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-70">
+                {status === 'submitting' ? 'Sending…' : 'Send Message'}
                 <Send size={20} />
               </button>
             </form>

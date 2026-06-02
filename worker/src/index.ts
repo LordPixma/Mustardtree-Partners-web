@@ -17,6 +17,7 @@ export interface Env {
   PRESIGNED_URL_EXPIRY: string;
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
+  CONTACT_TO_EMAIL?: string;
 }
 
 interface AuthUser {
@@ -1207,6 +1208,66 @@ async function handleGetMe(user: AuthUser): Promise<Response> {
   });
 }
 
+// ----- PUBLIC CONTACT FORM -----
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function pickString(body: Record<string, unknown>, keys: string[]): string {
+  for (const key of keys) {
+    const value = body[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+}
+
+async function handleContact(request: Request, env: Env): Promise<Response> {
+  let parsed: unknown;
+  try {
+    parsed = await request.json();
+  } catch {
+    return jsonResponse({ error: 'Invalid request body.' }, 400);
+  }
+
+  const body = (parsed && typeof parsed === 'object' ? parsed : {}) as Record<string, unknown>;
+  const name = pickString(body, ['name', 'fullName', 'full_name']);
+  const email = pickString(body, ['email', 'emailAddress', 'email_address']);
+  const message = pickString(body, ['message', 'help', 'enquiry', 'inquiry', 'details', 'comments']);
+
+  if (!name || !email || !message) {
+    return jsonResponse({ error: 'Please provide your name, email and a message.' }, 400);
+  }
+  if (name.length > 100 || email.length > 200 || message.length > 5000) {
+    return jsonResponse({ error: 'Submission is too long.' }, 400);
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return jsonResponse({ error: 'Please provide a valid email address.' }, 400);
+  }
+
+  const to = env.CONTACT_TO_EMAIL || 'info@mustardtreegroup.com';
+  const subject = `New website enquiry from ${name}`;
+  const html = `
+    <h2>New contact form submission</h2>
+    <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+    <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+    <p><strong>Message:</strong></p>
+    <p style="white-space:pre-wrap">${escapeHtml(message)}</p>
+  `;
+
+  const result = await sendEmail(env, to, subject, html);
+  if (!result.ok) {
+    console.error('Contact form email failed:', result.error);
+    return jsonResponse({ error: 'Something went wrong. Please try again.' }, 500);
+  }
+  return jsonResponse({ success: true });
+}
+
 // ----- ROUTER -----
 
 // ----- NOTIFICATION EMAIL PROCESSOR -----
@@ -1321,6 +1382,14 @@ export default {
     if (path.match(/^\/api\/shared\/[a-f0-9]+$/) && request.method === 'GET') {
       const token = path.split('/')[3];
       const response = await handleSharedDownload(env, token);
+      const newHeaders = new Headers(response.headers);
+      for (const [key, value] of Object.entries(cors)) newHeaders.set(key, value);
+      return new Response(response.body, { status: response.status, headers: newHeaders });
+    }
+
+    // Public contact form submission (no auth required)
+    if (path === '/api/contact' && request.method === 'POST') {
+      const response = await handleContact(request, env);
       const newHeaders = new Headers(response.headers);
       for (const [key, value] of Object.entries(cors)) newHeaders.set(key, value);
       return new Response(response.body, { status: response.status, headers: newHeaders });

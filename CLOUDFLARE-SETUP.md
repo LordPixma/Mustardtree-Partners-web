@@ -160,6 +160,38 @@ VITE_SESSION_TIMEOUT=480
 
 4. Click "Save" and trigger a new deployment
 
+### Step 12: Configure the contact form (Pages Function)
+
+The public contact form posts to `POST /api/contact`, which is served on-origin
+by the Pages Function in `functions/api/contact.ts` (bundled automatically by
+`wrangler pages deploy`).
+
+> **Why a Pages Function?** Cloudflare Pages `_redirects` proxying only supports
+> relative URLs on the same site — it cannot proxy `/api/*` to the external
+> Worker (`*.workers.dev`). A relative `POST /api/contact` therefore fell
+> through to the SPA catch-all and returned **405 Method Not Allowed** (you
+> cannot POST to a static `index.html`). The Pages Function handles the route
+> on-origin and takes precedence over `_redirects`.
+
+The function sends the enquiry by email via Resend. Add the API key as an
+encrypted secret on the **Pages** project (the same key already used by the
+Worker):
+
+```bash
+wrangler pages secret put RESEND_API_KEY --project-name=mustardtree-web
+```
+
+Optional plain-text variables (Settings → Environment variables) override the
+defaults:
+
+```env
+CONTACT_TO_EMAIL=info@mustardtreegroup.com
+EMAIL_FROM=MustardTree Partners <noreply@mustardtreegroup.com>
+```
+
+The sender domain must be verified in Resend. After setting the secret, trigger
+a new deployment.
+
 ## Verification Steps
 
 ### Step 12: Test the Setup
