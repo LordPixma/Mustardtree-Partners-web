@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
+import { Seo } from './Seo';
 
 export function GisServices() {
   const [heroRef, heroInView] = useInView({ triggerOnce: true, threshold: 0.1 });
@@ -213,6 +214,11 @@ export function GisServices() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
+      <Seo
+        title="Spatial Intelligence & GIS"
+        description="Location-aware analytics and Geographic Information Systems (GIS) integrated into business strategy and governance — a capability of MustardTree Partners' Intelligence & Analytics practice."
+        path="/services/gis"
+      />
       <Navbar />
 
       {/* Hero Section */}
@@ -233,7 +239,7 @@ export function GisServices() {
               Turning Location Data into Strategic Advantage
             </p>
             <p className="text-lg text-gray-400 max-w-4xl mx-auto">
-              At Mustardtree Partners, we help organisations make smarter decisions by unlocking the power of Spatial Intelligence and Geographic Information Systems (GIS).
+              At MustardTree Partners, we help organisations make smarter decisions by unlocking the power of Spatial Intelligence and Geographic Information Systems (GIS).
             </p>
           </motion.div>
         </div>
@@ -304,7 +310,7 @@ export function GisServices() {
               ))}
             </ul>
             <p className="text-gray-700 mt-8 pt-6 border-t border-gray-100">
-              At Mustardtree Partners, we integrate Spatial Intelligence directly into business strategy and governance frameworks.
+              At MustardTree Partners, we integrate Spatial Intelligence directly into business strategy and governance frameworks.
             </p>
           </motion.div>
         </div>
@@ -533,7 +539,7 @@ export function GisServices() {
         </div>
       </section>
 
-      {/* Why Mustardtree Partners */}
+      {/* Why MustardTree Partners */}
       <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -544,7 +550,7 @@ export function GisServices() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-white mb-4">
-              Why <span className="text-yellow-600">Mustardtree Partners</span>?
+              Why <span className="text-yellow-600">MustardTree Partners</span>?
             </h2>
           </motion.div>
 

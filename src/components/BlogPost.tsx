@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Calendar, Clock, User, ArrowLeft, Share2 } from 'lucide-react';
 import { blogApi } from '../services/apiClient';
 import type { BlogPost as BlogPostType } from '../types/blog';
+import { Seo } from './Seo';
 
 export function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
@@ -97,6 +98,12 @@ export function BlogPost() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-20">
+      <Seo
+        title={post.title}
+        description={post.excerpt}
+        path={`/blog/${post.slug}`}
+        type="article"
+      />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mb-8">
           <a href="/blog" className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">

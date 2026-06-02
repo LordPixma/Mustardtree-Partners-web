@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "npx vite",
-    "build": "npx vite build",
+    "build": "npx vite build && node scripts/prerender.mjs",
+    "build:spa": "npx vite build",
+    "prerender": "node scripts/prerender.mjs",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "preview": "npx vite preview",
     "setup-r2": "wrangler r2 bucket create mustardtree-documents && wrangler r2 bucket cors set mustardtree-documents --file cors.json",
@@ -21,6 +23,7 @@
     "lucide-react": "0.522.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-helmet-async": "^2.0.5",
     "react-intersection-observer": "^9.13.1",
     "react-router-dom": "^6.26.2",
     "tailwind-merge": "latest"
@@ -37,6 +40,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.1",
     "postcss": "latest",
+    "puppeteer": "^25.0.4",
     "tailwindcss": "3.4.17",
     "typescript": "^5.5.4",
     "vite": "^7.2.0"

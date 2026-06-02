@@ -79,7 +79,7 @@ export function Navbar() {
     { name: 'Home', id: 'hero', isSection: true },
     { name: 'About', id: 'about', isSection: true },
     { name: 'Services', id: 'services', isSection: true },
-    { name: 'GIS', path: '/services/gis', isSection: false },
+    { name: 'Sectors', id: 'sectors', isSection: true },
     { name: 'Why Us', id: 'why-choose-us', isSection: true },
     { name: 'Blog', path: '/blog', isSection: false },
     { name: 'Portal', path: '/portal', isSection: false },
@@ -93,7 +93,7 @@ export function Navbar() {
           <div className="flex-shrink-0">
             <img
               src="/mustardtree_300.png"
-              alt="Mustardtree Partners"
+              alt="MustardTree Partners"
               className={`h-12 transition-all duration-300 ${!isScrolled ? 'brightness-0 invert' : 'dark:brightness-0 dark:invert'}`}
             />
           </div>

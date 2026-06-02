@@ -1,8 +1,8 @@
 User-agent: *
 Allow: /
 
-# Sitemap location
-Sitemap: https://mustardtree-web.pages.dev/sitemap.xml
+# Private / authenticated areas — not for indexing
+Disallow: /portal
+Disallow: /admin
 
-# Crawl-delay (optional)
-Crawl-delay: 1
+Sitemap: https://mustardtreegroup.com/sitemap.xml

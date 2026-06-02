@@ -5,7 +5,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           {/* Company Info */}
           <div>
-            <img src="/mustardtree_300.png" alt="Mustardtree Partners" className="h-12 mb-4 brightness-0 invert" />
+            <img src="/mustardtree_300.png" alt="MustardTree Partners" className="h-12 mb-4 brightness-0 invert" />
             <p className="text-gray-400 text-sm">
               Partners in Growth, Governance & Intelligence
             </p>

@@ -1,3 +1,6 @@
+# Canonical host — force non-www (301). Harmless if www is not configured.
+https://www.mustardtreegroup.com/* https://mustardtreegroup.com/:splat 301
+
 # API proxy to Worker backend
 /api/* https://mustardtree-api.samuel-1e5.workers.dev/api/:splat 200
 

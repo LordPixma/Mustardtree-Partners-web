@@ -33,7 +33,7 @@ export function WhyChooseUs() {
       }} className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-serif mb-4">
             Why Choose{' '}
-            <span className="text-yellow-500">Mustardtree Partners</span>
+            <span className="text-yellow-500">MustardTree Partners</span>
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl mx-auto">
             Built on three foundational pillars that guide everything we do

@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { Shield, Mail, MapPin } from 'lucide-react';
+import { Seo } from './Seo';
 
 export function Privacy() {
   return (
     <div className="min-h-screen bg-gray-50 py-20">
+      <Seo title="Privacy Policy" description="How MustardTree Partners collects, uses, and protects your personal data." path="/privacy" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
