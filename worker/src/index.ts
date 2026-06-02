@@ -1265,11 +1265,38 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
     `Email: ${email}\n\n` +
     `Message:\n${message}\n`;
 
+  // Notify the team (required).
   const result = await sendEmail(env, to, subject, html, text);
   if (!result.ok) {
     console.error('Contact form email failed:', result.error);
     return jsonResponse({ error: 'Something went wrong. Please try again.' }, 500);
   }
+
+  // Acknowledge the submitter (best-effort — never fail the request on this).
+  const replySubject = 'We have received your message — MustardTree Partners';
+  const replyHtml = `
+    <p>Hi ${escapeHtml(name)},</p>
+    <p>Thank you for getting in touch with MustardTree Partners. We have received
+    your message and a member of our team will get back to you within one
+    business day.</p>
+    <p><strong>Your message:</strong></p>
+    <blockquote style="border-left:3px solid #d4a017;margin:0;padding-left:12px;color:#555;white-space:pre-wrap">${escapeHtml(message)}</blockquote>
+    <p>If your enquiry is urgent, you can reach us directly at
+    <a href="mailto:${to}">${escapeHtml(to)}</a>.</p>
+    <p>Kind regards,<br/>MustardTree Partners</p>
+  `;
+  const replyText =
+    `Hi ${name},\n\n` +
+    `Thank you for getting in touch with MustardTree Partners. We have received your ` +
+    `message and a member of our team will get back to you within one business day.\n\n` +
+    `Your message:\n${message}\n\n` +
+    `If your enquiry is urgent, you can reach us directly at ${to}.\n\n` +
+    `Kind regards,\nMustardTree Partners\n`;
+  const autoReply = await sendEmail(env, email, replySubject, replyHtml, replyText);
+  if (!autoReply.ok) {
+    console.error('Contact autoreply failed:', autoReply.error);
+  }
+
   return jsonResponse({ success: true });
 }
 

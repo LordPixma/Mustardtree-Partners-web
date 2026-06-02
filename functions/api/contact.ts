@@ -12,6 +12,10 @@
  * Functions take precedence over `_redirects`, so this runs on-origin with no
  * proxy and no CORS.
  *
+ * On submit it sends two emails via Resend: a notification to the team
+ * (CONTACT_TO_EMAIL) and a best-effort autoreply acknowledgement to the person
+ * who submitted the form.
+ *
  * Required Pages environment variable:
  *   RESEND_API_KEY   — Resend API key (set as an encrypted secret)
  * Optional:
@@ -87,7 +91,7 @@ function validate(body: Record<string, unknown>): { data?: ContactInput; error?:
   return { data: { name, email, message } };
 }
 
-function buildEmail(input: ContactInput): { subject: string; html: string; text: string } {
+function buildTeamEmail(input: ContactInput): { subject: string; html: string; text: string } {
   const subject = `New website enquiry from ${input.name}`;
   const html = `
     <h2>New contact form submission</h2>
@@ -104,11 +108,38 @@ function buildEmail(input: ContactInput): { subject: string; html: string; text:
   return { subject, html, text };
 }
 
-async function sendEmail(env: ContactEnv, input: ContactInput): Promise<{ ok: boolean; error?: string }> {
-  const to = env.CONTACT_TO_EMAIL || DEFAULT_TO;
-  const from = env.EMAIL_FROM || DEFAULT_FROM;
-  const { subject, html, text } = buildEmail(input);
+function buildAutoReply(input: ContactInput, contactEmail: string): { subject: string; html: string; text: string } {
+  const subject = 'We have received your message — MustardTree Partners';
+  const html = `
+    <p>Hi ${escapeHtml(input.name)},</p>
+    <p>Thank you for getting in touch with MustardTree Partners. We have received
+    your message and a member of our team will get back to you within one
+    business day.</p>
+    <p><strong>Your message:</strong></p>
+    <blockquote style="border-left:3px solid #d4a017;margin:0;padding-left:12px;color:#555;white-space:pre-wrap">${escapeHtml(input.message)}</blockquote>
+    <p>If your enquiry is urgent, you can reach us directly at
+    <a href="mailto:${contactEmail}">${escapeHtml(contactEmail)}</a>.</p>
+    <p>Kind regards,<br/>MustardTree Partners</p>
+  `;
+  const text =
+    `Hi ${input.name},\n\n` +
+    `Thank you for getting in touch with MustardTree Partners. We have received your ` +
+    `message and a member of our team will get back to you within one business day.\n\n` +
+    `Your message:\n${input.message}\n\n` +
+    `If your enquiry is urgent, you can reach us directly at ${contactEmail}.\n\n` +
+    `Kind regards,\nMustardTree Partners\n`;
+  return { subject, html, text };
+}
 
+interface OutboundEmail {
+  to: string;
+  subject: string;
+  html: string;
+  text: string;
+  replyTo?: string;
+}
+
+async function sendViaResend(env: ContactEnv, message: OutboundEmail): Promise<{ ok: boolean; error?: string }> {
   if (!env.RESEND_API_KEY) {
     return { ok: false, error: 'Email delivery is not configured (RESEND_API_KEY missing).' };
   }
@@ -120,12 +151,12 @@ async function sendEmail(env: ContactEnv, input: ContactInput): Promise<{ ok: bo
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from,
-      to: [to],
-      reply_to: input.email,
-      subject,
-      html,
-      text,
+      from: env.EMAIL_FROM || DEFAULT_FROM,
+      to: [message.to],
+      ...(message.replyTo ? { reply_to: message.replyTo } : {}),
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
     }),
   });
 
@@ -148,12 +179,36 @@ export async function onRequestPost(context: RequestContext): Promise<Response> 
     return json({ error: error || 'Invalid submission.' }, 400);
   }
 
+  const to = context.env.CONTACT_TO_EMAIL || DEFAULT_TO;
+
   try {
-    const result = await sendEmail(context.env, data);
-    if (!result.ok) {
-      console.error('Contact form email failed:', result.error);
+    // 1) Notify the team (required — failure means the enquiry is lost).
+    const team = buildTeamEmail(data);
+    const notify = await sendViaResend(context.env, {
+      to,
+      replyTo: data.email,
+      subject: team.subject,
+      html: team.html,
+      text: team.text,
+    });
+    if (!notify.ok) {
+      console.error('Contact form email failed:', notify.error);
       return json({ error: 'Something went wrong. Please try again.' }, 500);
     }
+
+    // 2) Acknowledge the submitter (best-effort — never fail the request on this).
+    const reply = buildAutoReply(data, to);
+    const auto = await sendViaResend(context.env, {
+      to: data.email,
+      replyTo: to,
+      subject: reply.subject,
+      html: reply.html,
+      text: reply.text,
+    });
+    if (!auto.ok) {
+      console.error('Contact autoreply failed:', auto.error);
+    }
+
     return json({ success: true });
   } catch (err) {
     console.error('Contact form error:', err instanceof Error ? err.message : err);
