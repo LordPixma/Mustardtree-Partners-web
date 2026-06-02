@@ -87,7 +87,7 @@ function validate(body: Record<string, unknown>): { data?: ContactInput; error?:
   return { data: { name, email, message } };
 }
 
-function buildEmail(input: ContactInput): { subject: string; html: string } {
+function buildEmail(input: ContactInput): { subject: string; html: string; text: string } {
   const subject = `New website enquiry from ${input.name}`;
   const html = `
     <h2>New contact form submission</h2>
@@ -96,13 +96,18 @@ function buildEmail(input: ContactInput): { subject: string; html: string } {
     <p><strong>Message:</strong></p>
     <p style="white-space:pre-wrap">${escapeHtml(input.message)}</p>
   `;
-  return { subject, html };
+  const text =
+    `New contact form submission\n\n` +
+    `Name: ${input.name}\n` +
+    `Email: ${input.email}\n\n` +
+    `Message:\n${input.message}\n`;
+  return { subject, html, text };
 }
 
 async function sendEmail(env: ContactEnv, input: ContactInput): Promise<{ ok: boolean; error?: string }> {
   const to = env.CONTACT_TO_EMAIL || DEFAULT_TO;
   const from = env.EMAIL_FROM || DEFAULT_FROM;
-  const { subject, html } = buildEmail(input);
+  const { subject, html, text } = buildEmail(input);
 
   if (!env.RESEND_API_KEY) {
     return { ok: false, error: 'Email delivery is not configured (RESEND_API_KEY missing).' };
@@ -120,6 +125,7 @@ async function sendEmail(env: ContactEnv, input: ContactInput): Promise<{ ok: bo
       reply_to: input.email,
       subject,
       html,
+      text,
     }),
   });
 

@@ -1259,8 +1259,13 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
     <p><strong>Message:</strong></p>
     <p style="white-space:pre-wrap">${escapeHtml(message)}</p>
   `;
+  const text =
+    `New contact form submission\n\n` +
+    `Name: ${name}\n` +
+    `Email: ${email}\n\n` +
+    `Message:\n${message}\n`;
 
-  const result = await sendEmail(env, to, subject, html);
+  const result = await sendEmail(env, to, subject, html, text);
   if (!result.ok) {
     console.error('Contact form email failed:', result.error);
     return jsonResponse({ error: 'Something went wrong. Please try again.' }, 500);
@@ -1272,7 +1277,7 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
 
 // ----- NOTIFICATION EMAIL PROCESSOR -----
 
-async function sendEmail(env: Env, to: string, subject: string, htmlBody: string): Promise<{ ok: boolean; error?: string }> {
+async function sendEmail(env: Env, to: string, subject: string, htmlBody: string, textBody?: string): Promise<{ ok: boolean; error?: string }> {
   // Try Resend API if key is configured
   if (env.RESEND_API_KEY) {
     const resp = await fetch('https://api.resend.com/emails', {
@@ -1283,6 +1288,7 @@ async function sendEmail(env: Env, to: string, subject: string, htmlBody: string
         to: [to],
         subject,
         html: htmlBody,
+        ...(textBody ? { text: textBody } : {}),
       }),
     });
     if (resp.ok || resp.status === 200) return { ok: true };
@@ -1298,7 +1304,10 @@ async function sendEmail(env: Env, to: string, subject: string, htmlBody: string
       personalizations: [{ to: [{ email: to }] }],
       from: { email: 'noreply@mustardtreegroup.com', name: 'MustardTree Partners' },
       subject,
-      content: [{ type: 'text/html', value: htmlBody }],
+      // text/plain must precede text/html per RFC 2046
+      content: textBody
+        ? [{ type: 'text/plain', value: textBody }, { type: 'text/html', value: htmlBody }]
+        : [{ type: 'text/html', value: htmlBody }],
     }),
   });
   if (resp.ok || resp.status === 202) return { ok: true };
