@@ -1236,6 +1236,13 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
   }
 
   const body = (parsed && typeof parsed === 'object' ? parsed : {}) as Record<string, unknown>;
+
+  // Honeypot: hidden field real users never fill. If populated, silently
+  // succeed without sending mail (the global rate limiter handles flooding).
+  if (pickString(body, ['company_website', '_gotcha'])) {
+    return jsonResponse({ success: true });
+  }
+
   const name = pickString(body, ['name', 'fullName', 'full_name']);
   const email = pickString(body, ['email', 'emailAddress', 'email_address']);
   const message = pickString(body, ['message', 'help', 'enquiry', 'inquiry', 'details', 'comments']);

@@ -192,6 +192,22 @@ EMAIL_FROM=MustardTree Partners <noreply@mustardtreegroup.com>
 The sender domain must be verified in Resend. After setting the secret, trigger
 a new deployment.
 
+On submit the function sends two emails: a notification to `CONTACT_TO_EMAIL`
+and a best-effort autoreply acknowledgement to the visitor.
+
+#### Spam / abuse protection
+
+The form includes a hidden honeypot field (`company_website`) — submissions that
+fill it are silently dropped — and a best-effort per-IP rate limit inside the
+Pages Function. Because that limiter is per-isolate (not globally consistent),
+add a **Cloudflare WAF rate-limiting rule** for hard, global protection:
+
+1. Dashboard → your domain → **Security → WAF → Rate limiting rules → Create**.
+2. **If incoming requests match:** `URI Path equals /api/contact` AND
+   `Request Method equals POST`.
+3. **Rate:** e.g. 5 requests per 1 minute, **counting by** client IP.
+4. **Then:** Block (e.g. for 10 minutes), optionally with a custom 429 response.
+
 ## Verification Steps
 
 ### Step 12: Test the Setup

@@ -37,6 +37,25 @@ interface RequestContext {
 const DEFAULT_TO = 'info@mustardtreegroup.com';
 const DEFAULT_FROM = 'MustardTree Partners <noreply@mustardtreegroup.com>';
 
+// Best-effort per-IP rate limiting. State is per-isolate (not globally
+// consistent), so it throttles bursts rather than enforcing a hard global cap —
+// pair it with a Cloudflare WAF rate-limiting rule for stronger protection.
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 600_000; // 10 minutes
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -166,6 +185,11 @@ async function sendViaResend(env: ContactEnv, message: OutboundEmail): Promise<{
 }
 
 export async function onRequestPost(context: RequestContext): Promise<Response> {
+  const ip = context.request.headers.get('CF-Connecting-IP') || 'unknown';
+  if (!checkRateLimit(ip)) {
+    return json({ error: 'Too many requests. Please try again in a few minutes.' }, 429);
+  }
+
   let parsed: unknown;
   try {
     parsed = await context.request.json();
@@ -174,6 +198,14 @@ export async function onRequestPost(context: RequestContext): Promise<Response> 
   }
 
   const body = (parsed && typeof parsed === 'object' ? parsed : {}) as Record<string, unknown>;
+
+  // Honeypot: a hidden field real users never fill. If it is populated, treat
+  // the submission as spam and silently succeed — don't tip off the bot, and
+  // don't send any email.
+  if (pickString(body, ['company_website', '_gotcha'])) {
+    return json({ success: true });
+  }
+
   const { data, error } = validate(body);
   if (!data) {
     return json({ error: error || 'Invalid submission.' }, 400);

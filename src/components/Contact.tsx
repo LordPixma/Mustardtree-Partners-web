@@ -10,7 +10,9 @@ export function Contact() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    message: ''
+    message: '',
+    // Honeypot — must stay empty for real users.
+    company_website: ''
   });
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -40,7 +42,8 @@ export function Contact() {
       setFormData({
         name: '',
         email: '',
-        message: ''
+        message: '',
+        company_website: ''
       });
     } catch (error) {
       setStatus('error');
@@ -84,6 +87,11 @@ export function Contact() {
           delay: 0.2
         }}>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Honeypot field — visually hidden; bots tend to fill it in */}
+              <div className="absolute -left-[9999px]" aria-hidden="true">
+                <label htmlFor="company_website">Company website (leave blank)</label>
+                <input type="text" id="company_website" name="company_website" tabIndex={-1} autoComplete="off" value={formData.company_website} onChange={handleChange} />
+              </div>
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Name
