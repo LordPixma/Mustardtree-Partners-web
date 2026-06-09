@@ -312,7 +312,10 @@ export const blogApi = {
   async getPosts(status?: string): Promise<BlogPost[]> {
     const params = status ? `?status=${status}` : '';
     const result = await apiFetch<{ posts: BlogPost[] }>(`/api/blog/posts${params}`);
-    return result.posts;
+    // Defensive: if the API ever returns a non-JSON body (e.g. an SPA shell
+    // from a misconfigured proxy), `result.posts` is undefined — return [] so
+    // the page renders an empty state rather than crashing on `.length`.
+    return Array.isArray(result?.posts) ? result.posts : [];
   },
 
   async getPostBySlug(slug: string): Promise<BlogPost | null> {

@@ -1,8 +1,9 @@
 # Canonical host — force non-www (301). Harmless if www is not configured.
 https://www.mustardtreegroup.com/* https://mustardtreegroup.com/:splat 301
 
-# API proxy to Worker backend
-/api/* https://mustardtree-api.samuel-1e5.workers.dev/api/:splat 200
+# Note: /api/* is proxied to the Worker by the Pages Function
+# functions/api/[[path]].ts — Pages _redirects cannot proxy to an external
+# origin, so do NOT add an /api/* rule here (it would never match anyway).
 
 # Handle client-side routing for single page application
 /* /index.html 200

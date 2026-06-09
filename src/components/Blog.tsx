@@ -13,7 +13,7 @@ export function Blog() {
     const fetchPosts = async () => {
       try {
         const publishedPosts = await blogApi.getPosts('published');
-        setPosts(publishedPosts);
+        setPosts(Array.isArray(publishedPosts) ? publishedPosts : []);
       } catch (error) {
         console.error('Error fetching posts:', error);
       } finally {
