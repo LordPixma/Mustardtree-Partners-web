@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Scale, ShieldCheck, Landmark, Globe2 } from 'lucide-react';
+import { Scale, ShieldCheck, Globe2 } from 'lucide-react';
 
 export function About() {
   const [ref, inView] = useInView({
@@ -10,11 +10,6 @@ export function About() {
 
   // Factual credibility markers only — no invented metrics, tenure, or clients.
   const markers = [
-    {
-      icon: Landmark,
-      label: 'Registered in England & Wales',
-      detail: 'Mustardtree Partners Ltd · No. 16815318',
-    },
     {
       icon: Globe2,
       label: 'UK & international clients',
