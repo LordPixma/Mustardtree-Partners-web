@@ -14,16 +14,19 @@ export function Hero() {
       id="hero"
       className="relative min-h-screen flex items-center bg-navy-950"
     >
-      {/* Background image + tonal overlays for depth and legibility */}
+      {/* Architectural background image (restored from the original hero) */}
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-[0.18]"
+        className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage:
             'url(https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80)',
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-navy-950 via-navy-900/95 to-navy-950" />
-      <div className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-transparent via-gold-500/30 to-transparent ml-0" />
+      {/* Legibility scrims: darker behind the left-aligned text, lighter over
+          the image to the right; vertical fade to seat the navbar and base. */}
+      <div className="absolute inset-0 bg-gradient-to-r from-navy-950/95 via-navy-950/75 to-navy-900/45" />
+      <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/10 to-navy-950/40" />
+      <div className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-transparent via-gold-500/30 to-transparent" />
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
         <div className="max-w-4xl">
