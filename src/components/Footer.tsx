@@ -1,4 +1,4 @@
-import { Mail, MapPin } from 'lucide-react';
+import { Mail, MapPin, Linkedin } from 'lucide-react';
 
 export function Footer() {
   const practices = [
@@ -37,6 +37,15 @@ export function Footer() {
               boards, and international companies establish, govern, and grow —
               with a single, accountable partner.
             </p>
+            <a
+              href="https://www.linkedin.com/company/mustardtreepartners/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="MustardTree Partners on LinkedIn"
+              className="mt-6 inline-flex items-center justify-center w-10 h-10 rounded-lg border border-white/15 text-navy-200/70 hover:text-gold-400 hover:border-gold-400/40 transition-colors"
+            >
+              <Linkedin size={18} />
+            </a>
           </div>
 
           {/* Practices */}
