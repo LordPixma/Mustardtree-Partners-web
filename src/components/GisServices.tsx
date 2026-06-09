@@ -216,7 +216,7 @@ export function GisServices() {
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <Seo
         title="Spatial Intelligence & GIS"
-        description="Location-aware analytics and Geographic Information Systems (GIS) integrated into business strategy and governance — a capability of MustardTree Partners' Intelligence & Analytics practice."
+        description="Location-aware analytics and Geographic Information Systems (GIS) integrated into business strategy and governance — a capability within MustardTree Partners' Risk, Cyber & Intelligence practice."
         path="/services/gis"
       />
       <Navbar />
@@ -232,6 +232,9 @@ export function GisServices() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-yellow-400 mb-5">
+              Risk, Cyber &amp; Intelligence
+            </p>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif text-white mb-6">
               Spatial Intelligence & <span className="text-yellow-500">GIS Services</span>
             </h1>

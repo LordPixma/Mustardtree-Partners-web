@@ -53,7 +53,7 @@ export function Contact() {
       [e.target.name]: e.target.value
     });
   };
-  return <section id="contact" className="py-24 bg-white dark:bg-gray-800">
+  return <section id="contact" className="py-24 md:py-32 bg-white dark:bg-navy-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div ref={ref} initial={{
         opacity: 0,
@@ -63,12 +63,15 @@ export function Contact() {
         y: 0
       } : {}} transition={{
         duration: 0.8
-      }} className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-serif text-gray-900 dark:text-white mb-4">
-            Get in <span className="text-yellow-600 dark:text-yellow-500">Touch</span>
+      }} className="max-w-3xl mb-16">
+          <p className="kicker mb-5">Contact</p>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-navy-900 dark:text-white mb-5 leading-tight">
+            Start a <span className="text-gold-600 dark:text-gold-400">conversation</span>
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            Ready to transform your business? Let's start a conversation.
+          <p className="text-lg text-navy-600 dark:text-navy-100/70 leading-relaxed">
+            Tell us what you are trying to achieve. We will respond with a
+            considered view and clear next steps — in confidence, and without
+            obligation.
           </p>
         </motion.div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">

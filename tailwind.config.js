@@ -1,4 +1,35 @@
 /* eslint-env node */
+
+// Refined brand palette — muted mustard-gold on deep navy with warm ivory.
+// `gold` is the single accent; `yellow` is remapped to the same scale so
+// pages not yet refactored to the named tokens harmonise automatically.
+const gold = {
+  50: "#FBF8EF",
+  100: "#F4ECD3",
+  200: "#E9D8A6",
+  300: "#DCC071",
+  400: "#CFAA4A",
+  500: "#C39A37", // primary accent (muted mustard-gold)
+  600: "#A47E2A", // accent for text on light surfaces
+  700: "#836222",
+  800: "#674D20",
+  900: "#564020",
+};
+
+const navy = {
+  50: "#F2F5F8",
+  100: "#E2E8F0",
+  200: "#C2CEDC",
+  300: "#94A8BE",
+  400: "#5E789A",
+  500: "#3C597C",
+  600: "#23425F",
+  700: "#1C3650",
+  800: "#142A40",
+  900: "#0E1F30", // primary dark surface
+  950: "#081523", // deepest
+};
+
 module.exports = {content: [
   './index.html',
   './src/**/*.{js,ts,jsx,tsx}'
@@ -13,7 +44,20 @@ module.exports = {content: [
       },
     },
     extend: {
+      fontFamily: {
+        serif: ['"Playfair Display"', 'Georgia', 'serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
       colors: {
+        gold,
+        yellow: gold,
+        navy,
+        ivory: {
+          DEFAULT: "#F8F6F1",
+          50: "#FCFBF8",
+          100: "#F8F6F1",
+          200: "#EFEBE1",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

@@ -1,86 +1,105 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+
 export function Hero() {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({
-        behavior: 'smooth'
-      });
+      element.scrollIntoView({ behavior: 'smooth' });
     }
   };
-  return <section id="hero" className="relative h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Background Image Overlay */}
-      <div className="absolute inset-0 bg-cover bg-center opacity-20" style={{
-      backgroundImage: 'url(https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80)'
-    }} />
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <motion.div initial={{
-        opacity: 0,
-        y: 30
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        duration: 0.8
-      }}>
-          <h1 className="text-5xl md:text-7xl font-serif text-white mb-6 leading-tight">
-            Governance. Intelligence.{' '}
-            <span className="text-yellow-500">Growth.</span>
-          </h1>
-        </motion.div>
-        <motion.p initial={{
-        opacity: 0,
-        y: 30
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        duration: 0.8,
-        delay: 0.2
-      }} className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">
-          Board-level governance, risk, and AI advisory — led by a practising
-          enterprise security architect with a legal background. Independent
-          counsel for organisations navigating regulation, technology, and
-          growth.
-        </motion.p>
-        <motion.div initial={{
-        opacity: 0,
-        y: 30
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        duration: 0.8,
-        delay: 0.4
-      }} className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button onClick={() => scrollToSection('contact')} className="px-8 py-4 bg-yellow-500 text-gray-900 rounded-lg font-semibold hover:bg-yellow-400 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
-            Book a Consultation
-            <ArrowRight size={20} />
-          </button>
-          <button onClick={() => scrollToSection('services')} className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-gray-900 transition-all duration-300">
-            Explore Our Services
-          </button>
-        </motion.div>
-      </div>
-      {/* Scroll Indicator */}
-      <motion.div initial={{
-      opacity: 0
-    }} animate={{
-      opacity: 1
-    }} transition={{
-      duration: 1,
-      delay: 1
-    }} className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
-        <div className="w-6 h-10 border-2 border-white rounded-full flex justify-center">
-          <motion.div animate={{
-          y: [0, 12, 0]
-        }} transition={{
-          duration: 1.5,
-          repeat: Infinity
-        }} className="w-1.5 h-1.5 bg-white rounded-full mt-2" />
+
+  return (
+    <section
+      id="hero"
+      className="relative min-h-screen flex items-center bg-navy-950"
+    >
+      {/* Background image + tonal overlays for depth and legibility */}
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-[0.18]"
+        style={{
+          backgroundImage:
+            'url(https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80)',
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-br from-navy-950 via-navy-900/95 to-navy-950" />
+      <div className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-transparent via-gold-500/30 to-transparent ml-0" />
+
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
+        <div className="max-w-4xl">
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            className="kicker text-gold-400 mb-6"
+          >
+            UK Business Advisory &amp; Corporate Services
+          </motion.p>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.05 }}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif text-white leading-[1.05] mb-8"
+          >
+            Establish. Govern.{' '}
+            <span className="text-gold-500">Grow.</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-lg md:text-xl text-navy-100/90 leading-relaxed mb-10 max-w-2xl"
+          >
+            MustardTree Partners is a UK advisory and corporate services firm. We
+            help founders, boards, and international companies establish in the
+            UK, meet their governance obligations, and grow with confidence —
+            from company formation and nominee directorships to strategy, risk,
+            and statutory compliance.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.35 }}
+            className="flex flex-col sm:flex-row gap-4"
+          >
+            <button
+              onClick={() => scrollToSection('contact')}
+              className="px-8 py-4 bg-gold-500 text-navy-950 rounded-md font-semibold hover:bg-gold-400 transition-colors duration-300 flex items-center justify-center gap-2 shadow-lg"
+            >
+              Arrange a consultation
+              <ArrowRight size={18} />
+            </button>
+            <button
+              onClick={() => scrollToSection('services')}
+              className="px-8 py-4 bg-transparent border border-white/30 text-white rounded-md font-semibold hover:bg-white/10 hover:border-white/50 transition-colors duration-300"
+            >
+              Explore our services
+            </button>
+          </motion.div>
+
+          {/* Lifecycle / proposition strip */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-px max-w-2xl border-t border-white/10 pt-8"
+          >
+            {[
+              { k: 'Establish', v: 'UK formation, structuring & market entry' },
+              { k: 'Govern', v: 'Directorships, secretarial & compliance' },
+              { k: 'Grow', v: 'Strategy, risk & intelligence' },
+            ].map((item) => (
+              <div key={item.k} className="pr-6">
+                <p className="text-gold-400 font-serif text-lg mb-1">{item.k}</p>
+                <p className="text-sm text-navy-200/80 leading-snug">{item.v}</p>
+              </div>
+            ))}
+          </motion.div>
         </div>
-      </motion.div>
-    </section>;
+      </div>
+    </section>
+  );
 }
