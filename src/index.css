@@ -79,9 +79,19 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Playfair Display', serif;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  /* Small uppercase kicker/eyebrow label used above section headings. */
+  .kicker {
+    @apply inline-block text-xs font-sans font-semibold uppercase tracking-[0.18em] text-gold-600 dark:text-gold-400;
   }
 }
 

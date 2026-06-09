@@ -12,9 +12,10 @@ import { Helmet } from 'react-helmet-async';
 export const SITE_URL = 'https://mustardtreegroup.com';
 export const SITE_NAME = 'MustardTree Partners';
 
-const DEFAULT_TITLE = 'MustardTree Partners — Governance. Intelligence. Growth.';
+const DEFAULT_TITLE =
+  'MustardTree Partners — UK Business Advisory & Corporate Services';
 const DEFAULT_DESCRIPTION =
-  'Board-level governance, risk, and AI advisory — led by a practising enterprise security architect with a legal background. Independent counsel for organisations navigating regulation, technology, and growth.';
+  'MustardTree Partners is a UK business advisory and corporate services firm. We help founders, boards, and international companies establish, govern, and grow — from UK company formation, nominee directorships, and Companies House filings to strategy, risk, and governance.';
 const OG_IMAGE = `${SITE_URL}/mustardtree_300.png`;
 
 interface SeoProps {
@@ -61,12 +62,21 @@ export function Seo({ title, description, path, noindex = false, type = 'website
 
 /**
  * Organization / ProfessionalService structured data for the homepage.
- * Only confirmed facts are included — no invented data.
+ * Institutional only — no named individuals. Only confirmed facts are
+ * included; the offer catalogue mirrors the four practice areas on the site.
  */
 export function OrganizationJsonLd() {
+  const practices = [
+    'Corporate Services & Governance',
+    'International Expansion & UK Market Entry',
+    'Strategy & Business Advisory',
+    'Risk, Cyber & Intelligence',
+  ];
+
   const data = {
     '@context': 'https://schema.org',
     '@type': 'ProfessionalService',
+    '@id': `${SITE_URL}/#organization`,
     name: SITE_NAME,
     legalName: 'Mustardtree Partners Ltd',
     url: SITE_URL,
@@ -74,6 +84,7 @@ export function OrganizationJsonLd() {
     image: OG_IMAGE,
     email: 'info@mustardtreegroup.com',
     description: DEFAULT_DESCRIPTION,
+    slogan: 'Establish. Govern. Grow.',
     address: {
       '@type': 'PostalAddress',
       streetAddress: '33A Great George Street',
@@ -81,14 +92,27 @@ export function OrganizationJsonLd() {
       postalCode: 'LS1 3BB',
       addressCountry: 'GB',
     },
-    founder: {
-      '@type': 'Person',
-      name: 'Samuel Odekunle',
-      jobTitle: 'Principal — Governance, Risk & Intelligence',
-    },
-    employee: {
-      '@type': 'Person',
-      name: 'Samuel Odekunle',
+    areaServed: [
+      { '@type': 'Country', name: 'United Kingdom' },
+      'Worldwide',
+    ],
+    knowsAbout: [
+      'Corporate governance',
+      'Company secretarial services',
+      'Nominee directorship',
+      'Companies House filings',
+      'UK company formation',
+      'UK market entry',
+      'Business strategy advisory',
+      'Cyber and AI governance',
+    ],
+    hasOfferCatalog: {
+      '@type': 'OfferCatalog',
+      name: 'Advisory & corporate services',
+      itemListElement: practices.map((name) => ({
+        '@type': 'Offer',
+        itemOffered: { '@type': 'Service', name },
+      })),
     },
   };
 

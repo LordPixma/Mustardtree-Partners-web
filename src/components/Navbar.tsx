@@ -76,14 +76,12 @@ export function Navbar() {
   };
 
   const navLinks: Array<{ name: string; id?: string; path?: string; isSection: boolean }> = [
-    { name: 'Home', id: 'hero', isSection: true },
     { name: 'About', id: 'about', isSection: true },
     { name: 'Services', id: 'services', isSection: true },
-    { name: 'Sectors', id: 'sectors', isSection: true },
-    { name: 'Why Us', id: 'why-choose-us', isSection: true },
-    { name: 'Blog', path: '/blog', isSection: false },
+    { name: 'Approach', id: 'approach', isSection: true },
+    { name: 'Industries', id: 'sectors', isSection: true },
+    { name: 'Insights', path: '/blog', isSection: false },
     { name: 'Portal', path: '/portal', isSection: false },
-    { name: 'Contact', id: 'contact', isSection: true },
   ];
 
   return (
@@ -98,12 +96,12 @@ export function Navbar() {
             />
           </div>
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-7">
             {navLinks.map(link => (
               <button
                 key={link.id || link.path}
                 onClick={() => link.isSection ? scrollToSection(link.id!) : handleNavigation(link.path!)}
-                className={`transition-colors duration-200 font-medium ${isScrolled ? 'text-gray-700 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400' : 'text-white hover:text-yellow-400'}`}
+                className={`text-sm transition-colors duration-200 font-medium ${isScrolled ? 'text-navy-700 dark:text-navy-100 hover:text-gold-600 dark:hover:text-gold-400' : 'text-white/90 hover:text-gold-400'}`}
               >
                 {link.name}
               </button>
@@ -111,10 +109,17 @@ export function Navbar() {
             {/* Dark mode toggle */}
             <button
               onClick={toggleDarkMode}
-              className={`p-1.5 rounded-full transition-colors ${isScrolled ? 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
+              className={`p-1.5 rounded-full transition-colors ${isScrolled ? 'text-navy-400 dark:text-navy-200 hover:bg-navy-50 dark:hover:bg-navy-800' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
               title={darkMode ? 'Light mode' : 'Dark mode'}
             >
               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            {/* Contact CTA */}
+            <button
+              onClick={() => scrollToSection('contact')}
+              className="px-5 py-2.5 bg-gold-500 text-navy-950 rounded-md text-sm font-semibold hover:bg-gold-400 transition-colors duration-200"
+            >
+              Contact
             </button>
           </div>
           {/* Mobile buttons */}
@@ -136,17 +141,23 @@ export function Navbar() {
       </div>
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white dark:bg-gray-900 border-t dark:border-gray-700">
-          <div className="px-4 py-4 space-y-3">
+        <div className="md:hidden bg-white dark:bg-navy-900 border-t border-navy-100 dark:border-white/10">
+          <div className="px-4 py-4 space-y-1">
             {navLinks.map(link => (
               <button
                 key={link.id || link.path}
                 onClick={() => link.isSection ? scrollToSection(link.id!) : handleNavigation(link.path!)}
-                className="block w-full text-left text-gray-700 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 py-2 font-medium"
+                className="block w-full text-left text-navy-700 dark:text-navy-100 hover:text-gold-600 dark:hover:text-gold-400 py-2 font-medium"
               >
                 {link.name}
               </button>
             ))}
+            <button
+              onClick={() => scrollToSection('contact')}
+              className="mt-3 w-full px-5 py-3 bg-gold-500 text-navy-950 rounded-md text-center font-semibold hover:bg-gold-400 transition-colors"
+            >
+              Contact
+            </button>
           </div>
         </div>
       )}
