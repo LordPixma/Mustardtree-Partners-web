@@ -1344,6 +1344,16 @@ export default {
     await processNotificationQueue(env);
   },
 
+  // Vestigial Cloudflare Queues consumer shim. The production Worker is still
+  // registered as a Queue consumer from an earlier configuration, but this app
+  // does NOT use Cloudflare Queues — its notification queue lives in D1 and is
+  // drained by the cron `scheduled` handler above. Without a `queue` handler,
+  // every deploy fails validation ("Queue handler is missing"). This no-op acks
+  // any delivered messages so deploys succeed and nothing backs up.
+  async queue(batch: MessageBatch): Promise<void> {
+    batch.ackAll();
+  },
+
   async fetch(request: Request, env: Env): Promise<Response> {
     const cors = corsHeaders(request, env);
 
