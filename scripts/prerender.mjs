@@ -70,7 +70,10 @@ async function prerender() {
       await new Promise((r) => setTimeout(r, 700)); // let animations settle
 
       const html = '<!doctype html>\n' + (await page.evaluate(() => document.documentElement.outerHTML));
-      const outPath = route === '/' ? join(DIST, 'index.html') : join(DIST, route, 'index.html');
+      // Write /foo as dist/foo.html (not dist/foo/index.html). Cloudflare Pages
+      // serves foo.html at /foo, whereas foo/index.html makes Pages 308-redirect
+      // /foo to /foo/ — which contradicts the canonical URLs set in <Seo>.
+      const outPath = route === '/' ? join(DIST, 'index.html') : join(DIST, `${route}.html`);
       await mkdir(dirname(outPath), { recursive: true });
       await writeFile(outPath, html, 'utf8');
       console.log(`[prerender] ${route} -> ${outPath.replace(DIST, 'dist')}`);
