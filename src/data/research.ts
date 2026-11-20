@@ -215,8 +215,6 @@ export const researchReports: ResearchReport[] = [
     ],
     definingThesis:
       'The first wave of AI is about producing intelligence. The next cycle is about converting intelligence into reliable physical productivity. The investment challenge is to own the economics of that transition, not its narrative.',
-    disclosure:
-      'Mustardtree Partners advises clients on identity and access management. Readers should weigh the digital trust section of this report with that in mind.',
     importantInformation:
       'This publication is general information for discussion. It is not a solicitation, an offer to buy or sell securities, or personalised investment advice, and it does not assess individual securities, entry prices, suitability, tax or the circumstances of any investor. Mustardtree Partners is not authorised to give regulated investment advice and asserts no performance record. Forward-looking statements are uncertain and may not materialise. Mustardtree Partners is not affiliated with the external sources cited.',
   },
