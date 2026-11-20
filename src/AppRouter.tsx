@@ -10,6 +10,8 @@ const Privacy = React.lazy(() => import("./components/Privacy").then(m => ({ def
 const Terms = React.lazy(() => import("./components/Terms").then(m => ({ default: m.Terms })));
 const Blog = React.lazy(() => import("./components/Blog").then(m => ({ default: m.Blog })));
 const BlogPost = React.lazy(() => import("./components/BlogPost").then(m => ({ default: m.BlogPost })));
+const Research = React.lazy(() => import("./components/Research").then(m => ({ default: m.Research })));
+const ResearchReport = React.lazy(() => import("./components/ResearchReport").then(m => ({ default: m.ResearchReport })));
 const GisServices = React.lazy(() => import("./components/GisServices").then(m => ({ default: m.GisServices })));
 const CustomerPortal = React.lazy(() => import("./components/CustomerPortal").then(m => ({ default: m.CustomerPortal })));
 const AdminLayout = React.lazy(() => import("./components/AdminRouter").then(m => ({ default: m.AdminLayout })));
@@ -142,6 +144,8 @@ export function AppRouter() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/research" element={<Research />} />
+            <Route path="/research/:slug" element={<ResearchReport />} />
             <Route path="/services/gis" element={<GisServices />} />
 
             {/* Customer Portal - Protected by authentication */}

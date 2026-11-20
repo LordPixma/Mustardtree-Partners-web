@@ -12,6 +12,7 @@ export function Footer() {
     { label: 'About', href: '/#about' },
     { label: 'Our approach', href: '/#approach' },
     { label: 'Industries', href: '/#sectors' },
+    { label: 'Research', href: '/research' },
     { label: 'Insights', href: '/blog' },
   ];
 
