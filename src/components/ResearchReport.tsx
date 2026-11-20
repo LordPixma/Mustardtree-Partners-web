@@ -20,6 +20,7 @@ export function ResearchReport() {
   const pageUrl = `${SITE_URL}/research/${report.slug}`;
   const pdfUrl = `${SITE_URL}${report.pdfPath}`;
   const fullTitle = `${report.kicker}: ${report.title}`;
+  const noun = report.type === 'Insight paper' ? 'paper' : 'report';
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -63,7 +64,7 @@ export function ResearchReport() {
       }
     >
       <Download className="w-4 h-4" />
-      Download full report (PDF, {report.pdfSizeKb} KB)
+      Download full {noun} (PDF, {report.pdfSizeKb} KB)
     </a>
   );
 
@@ -153,13 +154,10 @@ export function ResearchReport() {
             {/* Executive assessment */}
             <section>
               <SectionLabel>Executive assessment</SectionLabel>
-              <p className="text-xl text-navy-700 dark:text-navy-100 leading-relaxed mb-8">
-                The AI build-out is now spending more cash than it generates. We think a repricing is more likely
-                than not, and that it has already begun.
-              </p>
+              <p className="text-xl text-navy-700 dark:text-navy-100 leading-relaxed mb-8">{report.lede}</p>
               <div className="rounded-lg bg-gold-50 dark:bg-gold-900/20 border-l-4 border-gold-500 p-6 mb-10">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-navy-800 dark:text-gold-300 mb-2">
-                  Core investment thesis
+                  {report.coreThesisLabel}
                 </p>
                 <p className="text-navy-800 dark:text-navy-100 leading-relaxed">{report.coreThesis}</p>
               </div>
@@ -179,13 +177,10 @@ export function ResearchReport() {
 
             {/* Key figures */}
             <section>
-              <SectionLabel>The AI cycle: where the cash stands</SectionLabel>
-              <p className="text-navy-600 dark:text-navy-200 leading-relaxed mb-6">
-                Between the second and third quarters, the four largest hyperscalers moved, in aggregate, from funding
-                the build-out out of cash flow to funding it with borrowing.
-              </p>
+              <SectionLabel>{report.keyFigures.heading}</SectionLabel>
+              <p className="text-navy-600 dark:text-navy-200 leading-relaxed mb-6">{report.keyFigures.intro}</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {report.keyFigures.map((f) => (
+                {report.keyFigures.items.map((f) => (
                   <div key={f.label} className="rounded-lg bg-navy-50 dark:bg-navy-900 p-6">
                     <div className="w-8 h-0.5 bg-gold-500 mb-4" />
                     <p className="text-3xl font-bold text-navy-900 dark:text-white mb-2">{f.value}</p>
@@ -198,30 +193,35 @@ export function ResearchReport() {
 
             {/* Scenarios */}
             <section>
-              <SectionLabel>Three paths, ranked</SectionLabel>
+              <SectionLabel>{report.scenarios.heading}</SectionLabel>
+              {report.scenarios.intro && (
+                <p className="text-navy-600 dark:text-navy-200 leading-relaxed mb-6">{report.scenarios.intro}</p>
+              )}
               <div className="space-y-4">
-                {report.scenarios.map((s, i) => (
+                {report.scenarios.items.map((s, i) => (
                   <div key={s.name} className="rounded-lg bg-navy-50 dark:bg-navy-900 p-6">
                     <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1 mb-3">
                       <h3 className="font-semibold text-navy-900 dark:text-white">
-                        {i + 1}. {s.name}
+                        {s.share !== undefined ? `${i + 1}.` : String.fromCharCode(65 + i)} {s.name}
                       </h3>
-                      <p className="text-sm font-semibold text-gold-600 dark:text-gold-400">
-                        ~{s.share}% · {s.likelihood}
-                      </p>
+                      <p className="text-sm font-semibold text-gold-600 dark:text-gold-400">{s.tag}</p>
                     </div>
-                    <div
-                      className="h-2 rounded-full bg-navy-100 dark:bg-white/10 mb-4"
-                      role="img"
-                      aria-label={`Indicative likelihood about ${s.share} per cent`}
-                    >
-                      <div className="h-2 rounded-full bg-gold-500" style={{ width: `${s.share}%` }} />
-                    </div>
+                    {s.share !== undefined && (
+                      <div
+                        className="h-2 rounded-full bg-navy-100 dark:bg-white/10 mb-4"
+                        role="img"
+                        aria-label={`Indicative likelihood about ${s.share} per cent`}
+                      >
+                        <div className="h-2 rounded-full bg-gold-500" style={{ width: `${s.share}%` }} />
+                      </div>
+                    )}
                     <p className="text-sm text-navy-600 dark:text-navy-200 leading-relaxed">{s.summary}</p>
                   </div>
                 ))}
               </div>
-              <p className="mt-4 text-xs text-navy-400 dark:text-navy-300">{report.scenarioNote}</p>
+              {report.scenarios.note && (
+                <p className="mt-4 text-xs text-navy-400 dark:text-navy-300">{report.scenarios.note}</p>
+              )}
 
               <div className="mt-8 rounded-lg bg-navy-900 dark:bg-navy-800 p-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gold-400 mb-2">Research call</p>
@@ -229,45 +229,42 @@ export function ResearchReport() {
               </div>
             </section>
 
-            {/* Opportunity map */}
+            {/* Table */}
             <section>
-              <SectionLabel>The post-AI opportunity map</SectionLabel>
-              <p className="text-navy-600 dark:text-navy-200 leading-relaxed mb-6">
-                We rank six themes on end-market need, commercial readiness, dependence on AI budgets and the time
-                required to monetise.
-              </p>
+              <SectionLabel>{report.table.heading}</SectionLabel>
+              {report.table.intro && (
+                <p className="text-navy-600 dark:text-navy-200 leading-relaxed mb-6">{report.table.intro}</p>
+              )}
               <div className="overflow-x-auto rounded-lg border border-navy-100 dark:border-white/10">
-                <table className="w-full min-w-[40rem] text-sm text-left">
+                <table className="w-full min-w-[36rem] text-sm text-left">
                   <thead className="bg-navy-900 text-white">
                     <tr>
-                      {['Rank / sector', 'Window', 'Core investment case', 'Exposure to AI budgets', 'Key downside'].map(
-                        (h) => (
-                          <th key={h} scope="col" className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider">
-                            {h}
-                          </th>
-                        ),
-                      )}
+                      {report.table.columns.map((h) => (
+                        <th key={h} scope="col" className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider">
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-navy-100 dark:divide-white/10">
-                    {report.themes.map((t) => (
-                      <tr key={t.sector} className="odd:bg-navy-50/60 dark:odd:bg-navy-900/60 align-top">
+                    {report.table.rows.map(([head, ...cells]) => (
+                      <tr key={head} className="odd:bg-navy-50/60 dark:odd:bg-navy-900/60 align-top">
                         <th scope="row" className="px-4 py-3 font-semibold text-navy-900 dark:text-white">
-                          {t.rank} {t.sector}
+                          {head}
                         </th>
-                        <td className="px-4 py-3 text-navy-600 dark:text-navy-200 whitespace-nowrap">{t.window}</td>
-                        <td className="px-4 py-3 text-navy-600 dark:text-navy-200">{t.investmentCase}</td>
-                        <td className="px-4 py-3 text-navy-600 dark:text-navy-200">{t.aiExposure}</td>
-                        <td className="px-4 py-3 text-navy-600 dark:text-navy-200">{t.downside}</td>
+                        {cells.map((c, j) => (
+                          <td key={j} className="px-4 py-3 text-navy-600 dark:text-navy-200">
+                            {c}
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <p className="mt-4 text-xs text-navy-400 dark:text-navy-300">
-                Windows are the periods in which we expect each theme&apos;s economics to be tested, based on current
-                deployment lead times and published forecasts. They are not return forecasts.
-              </p>
+              {report.table.note && (
+                <p className="mt-4 text-xs text-navy-400 dark:text-navy-300">{report.table.note}</p>
+              )}
             </section>
 
             {/* Defining thesis */}
@@ -282,22 +279,15 @@ export function ResearchReport() {
 
             {/* Download CTA */}
             <section className="rounded-xl bg-navy-900 dark:bg-navy-800 p-8 md:p-10">
-              <h2 className="text-2xl font-serif text-white mb-3">Read the full report</h2>
-              <p className="text-navy-200 mb-6 max-w-2xl">
-                The full {report.pages}-page report includes the case against our thesis, deep dives on energy,
-                robotics, digital trust, advanced industry, biology and quantum, a three-phase transition to 2040, a
-                nine-indicator monitoring dashboard with thresholds, and full source notes.
-              </p>
+              <h2 className="text-2xl font-serif text-white mb-3">
+                Read the full {noun}
+              </h2>
+              <p className="text-navy-200 mb-6 max-w-2xl">{report.fullReportBlurb}</p>
               <DownloadButton />
             </section>
 
             {/* Important information */}
-            <section className="border-t border-navy-100 dark:border-white/10 pt-8 space-y-4">
-              {report.disclosure && (
-                <p className="text-xs text-navy-500 dark:text-navy-300 leading-relaxed">
-                  <strong className="text-navy-700 dark:text-navy-100">Disclosure.</strong> {report.disclosure}
-                </p>
-              )}
+            <section className="border-t border-navy-100 dark:border-white/10 pt-8">
               <p className="text-xs text-navy-500 dark:text-navy-300 leading-relaxed">
                 <strong className="text-navy-700 dark:text-navy-100">Important information.</strong>{' '}
                 {report.importantInformation}
@@ -314,7 +304,7 @@ export function ResearchReport() {
                     <FileText className="w-5 h-5 text-gold-600 dark:text-gold-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-navy-900 dark:text-white">Full report</p>
+                    <p className="text-sm font-semibold text-navy-900 dark:text-white">Full {noun}</p>
                     <p className="text-xs text-navy-500 dark:text-navy-300">
                       PDF · {report.pages} pages · {report.pdfSizeKb} KB
                     </p>
@@ -333,7 +323,7 @@ export function ResearchReport() {
 
               <div className="rounded-lg bg-navy-50 dark:bg-navy-900 p-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-navy-500 dark:text-navy-300 mb-4">
-                  In the full report
+                  In the full {noun}
                 </p>
                 <ol className="space-y-2.5">
                   {report.contents.map((c, i) => (

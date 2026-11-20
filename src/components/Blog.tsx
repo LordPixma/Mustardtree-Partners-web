@@ -4,9 +4,9 @@ import { Calendar, Clock, User, ArrowRight } from 'lucide-react';
 import { blogApi } from '../services/apiClient';
 import { BlogPost } from '../types/blog';
 import { Seo } from './Seo';
-import { researchReports } from '../data/research';
+import { sortedResearchReports } from '../data/research';
 
-const latestReport = [...researchReports].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))[0];
+const latestReport = sortedResearchReports()[0];
 
 export function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -88,7 +88,7 @@ export function Blog() {
                 <p className="text-navy-200">{latestReport.subtitle}</p>
               </div>
               <span className="inline-flex items-center gap-2 px-5 py-3 bg-gold-500 text-navy-950 rounded-md text-sm font-semibold group-hover:bg-gold-400 transition-colors whitespace-nowrap self-start md:self-auto">
-                Read the report
+                Read the {latestReport.type === 'Insight paper' ? 'paper' : 'report'}
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </span>
             </div>

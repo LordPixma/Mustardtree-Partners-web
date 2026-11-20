@@ -4,10 +4,10 @@ import { Link } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { Seo } from './Seo';
-import { researchReports, formatResearchDate } from '../data/research';
+import { sortedResearchReports, formatResearchDate } from '../data/research';
 
 export function Research() {
-  const reports = [...researchReports].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  const reports = sortedResearchReports();
 
   return (
     <div className="min-h-screen bg-white dark:bg-navy-950">
@@ -43,7 +43,7 @@ export function Research() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-navy-400 dark:text-navy-300 mb-8">
-            Latest reports
+            Latest research
           </h2>
           <div className="space-y-8">
             {reports.map((report) => (
@@ -113,7 +113,7 @@ export function Research() {
                       className="inline-flex items-center justify-center gap-2 px-5 py-3 border border-navy-200 dark:border-white/20 text-navy-800 dark:text-white rounded-md text-sm font-semibold hover:border-gold-500 hover:text-gold-600 dark:hover:text-gold-400 transition-colors"
                     >
                       <Download className="w-4 h-4" />
-                      Download full report
+                      Download full {report.type === 'Insight paper' ? 'paper' : 'report'}
                     </a>
                   </div>
                 </div>
@@ -122,8 +122,8 @@ export function Research() {
           </div>
 
           <p className="mt-12 text-xs text-navy-400 dark:text-navy-300 max-w-3xl">
-            MTP Research publications are general information for discussion and are not investment advice.
-            Mustardtree Partners is not authorised to give regulated investment advice.
+            MTP Research publications are general information for discussion. They are not investment, legal or
+            professional advice; see the important information in each publication.
           </p>
         </div>
       </section>

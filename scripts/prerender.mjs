@@ -25,6 +25,7 @@ const ROUTES = [
   '/blog',
   '/research',
   '/research/after-the-ai-bubble',
+  '/research/future-of-identity-and-access',
   '/privacy',
   '/terms',
   '/services/gis',
