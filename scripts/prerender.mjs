@@ -22,9 +22,9 @@ import { fileURLToPath } from 'node:url';
 // Public, crawlable routes. /portal and /admin are intentionally excluded.
 const ROUTES = [
   '/',
-  '/blog',
   '/research',
   '/research/after-the-ai-bubble',
+  '/research/future-of-identity-and-access',
   '/privacy',
   '/terms',
   '/services/gis',

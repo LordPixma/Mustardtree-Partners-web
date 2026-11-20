@@ -5,5 +5,8 @@ https://www.mustardtreegroup.com/* https://mustardtreegroup.com/:splat 301
 # functions/api/[[path]].ts — Pages _redirects cannot proxy to an external
 # origin, so do NOT add an /api/* rule here (it would never match anyway).
 
+# Insights has been folded into Research.
+/blog /research 301
+
 # Handle client-side routing for single page application
 /* /index.html 200
