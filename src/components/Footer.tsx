@@ -13,7 +13,6 @@ export function Footer() {
     { label: 'Our approach', href: '/#approach' },
     { label: 'Industries', href: '/#sectors' },
     { label: 'Research', href: '/research' },
-    { label: 'Insights', href: '/blog' },
   ];
 
   const legal = [
