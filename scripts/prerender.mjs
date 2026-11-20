@@ -20,7 +20,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Public, crawlable routes. /portal and /admin are intentionally excluded.
-const ROUTES = ['/', '/blog', '/privacy', '/terms', '/services/gis'];
+const ROUTES = [
+  '/',
+  '/blog',
+  '/research',
+  '/research/after-the-ai-bubble',
+  '/privacy',
+  '/terms',
+  '/services/gis',
+];
 
 const DIST = fileURLToPath(new URL('../dist', import.meta.url));
 const PORT = 4178;

@@ -4,6 +4,9 @@ import { Calendar, Clock, User, ArrowRight } from 'lucide-react';
 import { blogApi } from '../services/apiClient';
 import { BlogPost } from '../types/blog';
 import { Seo } from './Seo';
+import { researchReports } from '../data/research';
+
+const latestReport = [...researchReports].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))[0];
 
 export function Blog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -66,6 +69,31 @@ export function Blog() {
             from the MustardTree Partners team.
           </p>
         </motion.div>
+
+        {latestReport && (
+          <motion.a
+            href={`/research/${latestReport.slug}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="group block mb-16 rounded-xl bg-navy-900 p-8 md:p-10 relative overflow-hidden hover:shadow-xl transition-shadow"
+          >
+            <div aria-hidden="true" className="absolute -right-20 -bottom-28 w-80 h-80 rounded-full border border-gold-500/50" />
+            <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="max-w-3xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gold-400 mb-3">
+                  New research · {latestReport.kicker}
+                </p>
+                <h2 className="text-2xl md:text-3xl font-serif text-white mb-3">{latestReport.title}</h2>
+                <p className="text-navy-200">{latestReport.subtitle}</p>
+              </div>
+              <span className="inline-flex items-center gap-2 px-5 py-3 bg-gold-500 text-navy-950 rounded-md text-sm font-semibold group-hover:bg-gold-400 transition-colors whitespace-nowrap self-start md:self-auto">
+                Read the report
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </span>
+            </div>
+          </motion.a>
+        )}
 
         {posts.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">

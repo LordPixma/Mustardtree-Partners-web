@@ -80,6 +80,7 @@ export function Navbar() {
     { name: 'Services', id: 'services', isSection: true },
     { name: 'Approach', id: 'approach', isSection: true },
     { name: 'Industries', id: 'sectors', isSection: true },
+    { name: 'Research', path: '/research', isSection: false },
     { name: 'Insights', path: '/blog', isSection: false },
     { name: 'Portal', path: '/portal', isSection: false },
   ];
